@@ -1,0 +1,106 @@
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════════════
+   LeadGen — Design System
+   ═══════════════════════════════════════════════════ */
+
+@theme {
+  --color-accent-400: #818cf8;
+  --color-accent-500: #6366f1;
+  --color-n-400: #94a3b8;
+  --color-n-500: #64748b;
+  --color-n-600: #475569;
+  --color-surface: #060a14;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "SF Mono", "Fira Code", "JetBrains Mono", monospace;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  scrollbar-width: thin;
+  scrollbar-color: #334155 transparent;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--color-surface);
+  color: #f8fafc;
+}
+
+::selection { background: rgba(99,102,241,0.25); color: white; }
+:focus-visible { outline: 2px solid var(--color-accent-500); outline-offset: 2px; }
+
+.skip-link {
+  position: fixed; top: -100%; left: 16px; z-index: 9999;
+  padding: 8px 16px; border-radius: 8px;
+  background: var(--color-accent-500); color: white;
+  font-size: 14px; text-decoration: none;
+  transition: top 0.2s ease;
+}
+.skip-link:focus { top: 16px; }
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 0.4; box-shadow: 0 0 4px rgba(99,102,241,0.1); }
+  50% { opacity: 1; box-shadow: 0 0 10px rgba(99,102,241,0.3); }
+}
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+@keyframes status-pulse {
+  0%, 100% { box-shadow: 0 0 4px rgba(74,222,128,0.1); }
+  50% { box-shadow: 0 0 12px rgba(74,222,128,0.3); }
+}
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Section spacing ── */
+.section-pad { padding-top: 6rem; padding-bottom: 6rem; }
+@media (min-width: 768px) { .section-pad { padding-top: 8rem; padding-bottom: 8rem; } }
+
+/* ── Micro-interactions ───────────────────────────────────────── */
+
+/* Card hover lift */
+.card-hover {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+/* Button press */
+.btn-press:active {
+  transform: scale(0.97);
+  transition-duration: 0.05s;
+}
+
+/* Subtle border glow on focus */
+a:focus-visible, button:focus-visible {
+  outline: 2px solid var(--color-accent-500);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* Terminal cursor blink for stream */
+@keyframes terminal-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LeadGen Agent · Live Telemetry Dashboard</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--ease-out:cubic-bezier(0.16,1,0.3,1);--indigo:#4f46e5;--indigo-light:#818cf8;--purple:#7c3aed;--white:#f8fafc;--gray-400:#94a3b8;--gray-500:#64748b;--gray-600:#475569;--green:#4ade80;--amber:#fbbf24;--red:#f87171;--teal:#2dd4bf}
+html{font-size:16px;-webkit-font-smoothing:antialiased}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#030712;color:var(--white);line-height:1.6;min-height:100vh;display:flex;flex-direction:column;align-items:center;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(255,255,255,0.012) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.012) 1px,transparent 1px);background-size:80px 80px;mask-image:radial-gradient(ellipse 65% 55% at 50% 28%,black 30%,transparent 70%)}
+.container{width:100%;max-width:1200px;padding:0 28px;position:relative;z-index:1;margin:0 auto}
+header{width:100%;padding:18px 0;border-bottom:1px solid rgba(255,255,255,.05);background:rgba(3,7,18,.8);backdrop-filter:blur(20px);position:sticky;top:0;z-index:100}
+header .container{display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:12px;font-size:1.15rem;font-weight:700}
+.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--indigo),var(--purple));border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.85rem;font-weight:800}
+nav{display:flex;align-items:center;gap:24px}
+nav a{color:var(--gray-400);text-decoration:none;font-size:.875rem;font-weight:500;transition:color .3s var(--ease-out)}
+nav a:hover{color:var(--white)}
+.hero-inner{max-width:1100px;margin:0 auto;text-align:center;padding:3rem 2rem 1.5rem;position:relative;z-index:2}
+.hero h1{font-size:2.2rem;font-weight:800;letter-spacing:-.04em;margin-bottom:8px}
+.hero-sub{font-size:1rem;color:var(--gray-400);margin-bottom:24px}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.stat-card{background:rgba(255,255,255,.015);border:1px solid rgba(255,255,255,.04);border-radius:14px;padding:18px;text-align:left;transition:all .5s var(--ease-out)}
+.stat-card:hover{transform:translateY(-2px);border-color:rgba(129,140,248,.1)}
+.control-bar{display:flex;align-items:center;gap:12px;margin-bottom:24px;flex-wrap:wrap}
+.control-bar input{flex:1;min-width:200px;padding:12px 16px;border:1px solid rgba(255,255,255,.06);border-radius:10px;font-size:.9rem;outline:none;background:rgba(0,0,0,.5);color:#f8fafc}
+.control-bar input::placeholder{color:#475569}
+.control-bar input:focus{border-color:rgba(129,140,248,.4)}
+.sub-status{display:flex;align-items:center;gap:6px;font-size:.72rem;padding:8px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.04);background:rgba(0,0,0,.2);white-space:nowrap}
+.sub-status--active{border-color:rgba(74,222,128,.15);color:#4ade80}
+.sub-status--inactive{border-color:rgba(251,191,36,.1);color:#fbbf24}
+.stat-label{font-size:.65rem;color:var(--gray-500);text-transform:uppercase;letter-spacing:.06em}
+.stat-value{font-size:1.8rem;font-weight:750;line-height:1.2;margin-top:4px}
+.stat-value--green{background:linear-gradient(135deg,var(--green),var(--teal));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.stat-value--blue{background:linear-gradient(135deg,var(--indigo-light),var(--purple));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.stat-value--amber{color:var(--amber)}
+.stat-value--white{color:var(--white)}
+.stat-sub{font-size:.68rem;color:var(--gray-500);margin-top:2px}
+.dash{width:100%;background:linear-gradient(145deg,rgba(15,23,42,.65),rgba(10,10,30,.55));backdrop-filter:blur(32px);border:1px solid rgba(255,255,255,.05);border-radius:18px;overflow:hidden}
+.dash-topbar{display:flex;align-items:center;gap:8px;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,.04);background:rgba(0,0,0,.25)}
+.dash-dot{width:10px;height:10px;border-radius:50%}
+.dash-dot:nth-child(1){background:var(--red)}
+.dash-dot:nth-child(2){background:var(--amber)}
+.dash-dot:nth-child(3){background:var(--green)}
+.dash-topbar-title{margin-left:14px;font-size:.72rem;color:var(--gray-500)}
+.dash-conn-status{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:.68rem}
+.conn-dot{width:6px;height:6px;border-radius:50%;display:inline-block}
+.conn-dot--live{background:var(--green);animation:dotPulse 2.5s ease-in-out infinite}
+.conn-dot--offline{background:var(--red)}
+.conn-dot--connecting{background:var(--amber)}
+@keyframes dotPulse{0%,100%{box-shadow:0 0 8px rgba(74,222,128,.2)}50%{box-shadow:0 0 20px rgba(74,222,128,.5)}}
+.dash-body{display:grid;grid-template-columns:1.8fr 1.2fr 1fr}
+.dash-col{padding:20px;border-right:1px solid rgba(255,255,255,.03)}
+.dash-col:last-child{border-right:none}
+.dash-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.dash-hdr h3{font-size:.82rem;font-weight:600;color:var(--gray-200)}
+.dash-hdr span{font-size:.68rem;color:var(--gray-500)}
+.dash-hdr .pulse{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);margin-right:6px;animation:dotPulse 2s infinite}
+.terminal{background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.03);border-radius:10px;overflow:hidden}
+.terminal-topbar{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.03);background:rgba(0,0,0,.2)}
+.terminal-title{margin-left:8px;font-size:.65rem;color:var(--gray-500);font-family:'SF Mono','Fira Code',monospace}
+.terminal-body{padding:14px;max-height:520px;overflow-y:auto;font-family:'SF Mono','Fira Code',monospace;font-size:.72rem;line-height:1.65;scrollbar-width:thin}
+.term-line{white-space:pre-wrap;opacity:0;animation:termIn .25s var(--ease-out) forwards;padding:2px 0}
+@keyframes termIn{to{opacity:1}}
+.term-time{color:var(--gray-500);margin-right:8px}
+.term-type{display:inline-block;padding:1px 6px;border-radius:3px;font-size:.6rem;font-weight:600;margin-right:6px;text-transform:uppercase;letter-spacing:.03em}
+.term-type--system{background:rgba(129,140,248,.12);color:var(--indigo-light)}
+.term-type--scrape{background:rgba(99,102,241,.15);color:var(--indigo-light)}
+.term-type--leads{background:rgba(74,222,128,.1);color:var(--green)}
+.term-type--outreach{background:rgba(251,191,36,.1);color:var(--amber)}
+.term-type--error{background:rgba(239,68,68,.12);color:var(--red)}
+.term-type--skip{background:rgba(251,191,36,.08);color:var(--gray-400)}
+.term-msg{color:var(--gray-300)}
+.reasoning-panel{max-height:520px;overflow-y:auto;scrollbar-width:thin}
+.reason-item{padding:12px 0;border-bottom:1px solid rgba(255,255,255,.02);text-align:left;animation:sideIn .3s var(--ease-out)}
+@keyframes sideIn{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:translateX(0)}}
+.reason-icon{font-size:.85rem;margin-right:8px;display:inline-block;width:20px;text-align:center}
+.reason-title{font-size:.72rem;font-weight:500;color:var(--gray-200);display:inline}
+.reason-desc{font-size:.68rem;color:var(--gray-400);margin-top:3px;line-height:1.5;padding-left:28px}
+.reason-conf{font-size:.6rem;color:var(--gray-500);margin-top:2px;padding-left:28px}
+.reason-conf .bar{display:inline-block;height:4px;border-radius:2px;vertical-align:middle;margin-right:4px}
+.reason-time{font-size:.6rem;color:var(--gray-500);float:right}
+.side-activity{max-height:520px;overflow-y:auto;scrollbar-width:thin}
+.side-item{display:flex;gap:10px;padding:10px 0;font-size:.7rem;line-height:1.5;border-bottom:1px solid rgba(255,255,255,.02);animation:sideIn .4s var(--ease-out)}
+.side-icon{width:20px;text-align:center;flex-shrink:0;font-size:.8rem}
+.side-txt{color:var(--gray-400)}
+.side-txt .label{display:inline-block;padding:0 5px;border-radius:3px;font-size:.6rem;font-weight:600;margin-right:4px;text-transform:uppercase}
+.side-txt .label--g{background:rgba(74,222,128,.1);color:var(--green)}
+.side-txt .label--b{background:rgba(99,102,241,.1);color:var(--indigo-light)}
+.side-txt .label--a{background:rgba(251,191,36,.1);color:var(--amber)}
+.side-txt strong{color:var(--gray-200);font-weight:500}
+.dash-footer{text-align:center;padding:10px;font-size:.65rem;color:var(--gray-600);border-top:1px solid rgba(255,255,255,.03);background:rgba(0,0,0,.2)}
+footer{width:100%;padding:44px 0;background:rgba(0,0,0,.15)}
+footer .container{display:flex;align-items:center;justify-content:space-between}
+.copyright{color:var(--gray-600);font-size:.85rem}
+
+/* ── Responsive ────────────────────────────────────────────── */
+@media(max-width:1024px){.dash-body{grid-template-columns:1fr 1fr}.dash-col:nth-child(3){grid-column:1/-1;border-right:none}}
+@media(max-width:768px){
+  .hero h1{font-size:1.5rem}
+  .hero-inner{padding:2rem 1rem 1rem}
+  .stats-row{grid-template-columns:1fr 1fr;gap:8px}
+  .stat-card{padding:12px}
+  .stat-value{font-size:1.4rem}
+  .dash-body{grid-template-columns:1fr}.dash-col{border-right:none!important;padding:12px}
+  .control-bar{flex-direction:column;align-items:stretch;gap:8px}
+  .control-bar input{min-width:0;width:100%}
+  .sub-status{justify-content:center}
+  .terminal-body{max-height:320px;font-size:.65rem}
+  .reasoning-panel{max-height:320px}
+  .side-activity{max-height:320px}
+  footer .container{flex-direction:column;gap:8px;text-align:center}
+}
+@media(max-width:480px){
+  .hero h1{font-size:1.3rem}
+  .stats-row{grid-template-columns:1fr 1fr;gap:6px}
+  .stat-card{padding:10px}
+  .stat-value{font-size:1.2rem}
+  .stat-label{font-size:.6rem}
+  .container{padding:0 12px}
+  .dash-col{padding:8px}
+}
+
+</style>
+</head>
+<body>
+<header><div class="container"><div class="logo"><div class="logo-icon">LG</div>LeadGen Agent</div><nav><a href="/">Home</a><a href="/dashboard" style="color:#818cf8">Dashboard</a></nav></div></header>
+<main style="flex:1;width:100%">
+<section class="hero"><div class="hero-inner">
+  <h1>Live Agent Dashboard</h1>
+  <p class="hero-sub">Real-time telemetry — every AI decision appears here via WebSocket.</p>
+  <div class="control-bar">
+    <a href="/subscribe" class="sub-status sub-status--inactive" id="subStatus" style="text-decoration:none;cursor:pointer"><span style="width:6px;height:6px;border-radius:50%;display:inline-block" id="subDot"></span><span id="subText">Checking subscription…</span></a>
+    <input type="text" id="queryInput" placeholder='Enter a query — e.g. "Digital agencies in Berlin"' />
+    <button class="btn-primary" id="scrapeBtn" style="padding:12px 22px;font-size:.85rem" onclick="triggerScrape()">🔍 Scrape</button>
+    <button class="btn-secondary" id="outreachBtn" style="padding:12px 22px;font-size:.85rem" onclick="triggerOutreach()">✉️ Outreach</button>
+  </div>
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-label">Leads Collected</div><div class="stat-value stat-value--green" id="metricLeads">0</div><div class="stat-sub">total in database</div></div>
+    <div class="stat-card"><div class="stat-label">Contacted</div><div class="stat-value stat-value--blue" id="metricContacted">0</div><div class="stat-sub">outreach sent</div></div>
+    <div class="stat-card"><div class="stat-label">Pending</div><div class="stat-value stat-value--amber" id="metricNew">0</div><div class="stat-sub">awaiting outreach</div></div>
+    <div class="stat-card"><div class="stat-label">Replied</div><div class="stat-value stat-value--white" id="metricReplied">0</div><div class="stat-sub">conversion rate</div></div>
+  </div>
+  <div class="dash">
+    <div class="dash-topbar">
+      <span class="dash-dot"></span><span class="dash-dot"></span><span class="dash-dot"></span>
+      <span class="dash-topbar-title">LeadGen Agent · Real-time Telemetry</span>
+      <span class="dash-conn-status"><span class="conn-dot conn-dot--connecting" id="connDot"></span><span id="connStatus">Connecting...</span></span>
+    </div>
+    <div class="dash-body">
+      <div class="dash-col">
+        <div class="dash-hdr"><h3><span class="pulse"></span>AI Decision Log</h3><span id="eventCount">0 events</span></div>
+        <div class="terminal">
+          <div class="terminal-topbar"><span class="terminal-title">agent@leadgen:~$</span></div>
+          <div class="terminal-body" id="termBody">
+            <div class="term-line" style="opacity:1"><span class="term-time">[$]</span><span class="term-msg">Waiting for agent events…</span></div>
+            <div class="term-line term-cursor" style="opacity:1"><span class="term-time">[$]</span><span class="term-msg">▊</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="dash-col">
+        <div class="dash-hdr"><h3>🧠 Reasoning</h3><span id="reasonCount">0</span></div>
+        <div class="reasoning-panel" id="reasonPanel"><div class="reason-item"><span class="reason-icon">⏳</span><span class="reason-title">Waiting for agent decisions…</span></div></div>
+      </div>
+      <div class="dash-col">
+        <div class="dash-hdr"><h3>📋 Live Activity</h3><span id="activityCount">0</span></div>
+        <div class="side-activity" id="activityFeed"><div class="side-item"><span class="side-icon">⏳</span><span class="side-txt">Waiting for events…</span></div></div>
+      </div>
+    </div>
+    <div class="dash-footer">⚡ Live WebSocket streaming · every agent decision appears in real-time</div>
+  </div>
+</div></section>
+</main>
+<footer><div class="container"><div class="logo" style="font-size:.9rem"><div class="logo-icon" style="width:28px;height:28px;font-size:.75rem">LG</div>LeadGen Agent</div><div class="copyright">&copy; 2026 LeadGen</div></div></footer>
+<script>
+var ws=null,activityItems=0,eventCount=0,reasonCount=0,reconnectTimer=null,reconnectDelay=1000;
+var WS_URL=(location.protocol==='https:'?'wss:':'ws:')+'//'+location.host+'/ws';
+var $=function(id){return document.getElementById(id)};
+var connDot=$('connDot'),connStatus=$('connStatus'),termBody=$('termBody');
+var activityFeed=$('activityFeed'),reasonPanel=$('reasonPanel');
+var evtCountEl=$('eventCount'),activityCountEl=$('activityCount'),reasonCountEl=$('reasonCount');
+var metricLeads=$('metricLeads'),metricContacted=$('metricContacted'),metricNew=$('metricNew'),metricReplied=$('metricReplied');
+function setConn(s){if(s==='live'){connDot.className='conn-dot conn-dot--live';connStatus.textContent='Live'}else if(s==='connecting'){connDot.className='conn-dot conn-dot--connecting';connStatus.textContent='Connecting...'}else{connDot.className='conn-dot conn-dot--offline';connStatus.textContent='Offline'}}
+function connectWS(){if(ws&&(ws.readyState===WebSocket.OPEN||ws.readyState===WebSocket.CONNECTING))return;setConn('connecting');try{ws=new WebSocket(WS_URL)}catch(e){setConn('offline');scheduleReconnect();return}ws.onopen=function(){setConn('live');reconnectDelay=1000;addTermLine('system','Connected to agent live stream')};ws.onmessage=function(evt){try{var msg=JSON.parse(evt.data);if(msg.type==='ping'||msg.type==='pong')return;if(msg.type==='history'&&msg.events)msg.events.forEach(function(e){renderEvent(e)});else if(msg.type==='events'&&msg.events)msg.events.forEach(function(e){renderEvent(e)})}catch(e){}};ws.onclose=function(){setConn('offline');ws=null;scheduleReconnect()};ws.onerror=function(){if(ws){try{ws.close()}catch(e){}}}}
+function scheduleReconnect(){if(reconnectTimer)clearTimeout(reconnectTimer);reconnectTimer=setTimeout(function(){connectWS()},reconnectDelay);reconnectDelay=Math.min(reconnectDelay*2,30000)}
+function renderEvent(e){var t=e.type||'unknown',r=e.reasoning||'',c=e.confidence,err=e.error,p=e.payload||{},success=e.success;var ts=e.timestamp?new Date(e.timestamp):new Date(),timeStr=ts.toLocaleTimeString();var iconMap={system:'⚡',scrape:'🔍',leads:'📋',outreach:'✉️',error:'❌',skip:'⏭️'};var icon=iconMap[t]||'•';var colorClass='';if(t==='error'||success===false)colorClass='e';var msg=icon+' '+r;if(err)msg+=' <span style="color:var(--red)">('+escapeHtml(err)+')</span>';addTermLine(t,msg,timeStr,colorClass);eventCount++;if(evtCountEl)evtCountEl.textContent=eventCount+' events';var confPct=c!==null&&c!==undefined?Math.round(c*100):'--';var confColor=c!==null&&c!==undefined?(c>=0.8?'#4ade80':c>=0.5?'#fbbf24':'#f87171'):'#64748b';var reasonHtml='<span class="reason-icon">'+icon+'</span><span class="reason-title">'+typeLabel(t)+'</span><span class="reason-time">'+timeStr+'</span>';reasonHtml+='<div class="reason-desc">'+escapeHtml(r)+(err?' <span style="color:var(--red)">'+escapeHtml(err)+'</span>':'')+'</div>';reasonHtml+='<div class="reason-conf"><span class="bar" style="width:'+confPct+'%;background:'+confColor+';opacity:0.6"></span> confidence: '+confPct+'%</div>';addReason(reasonHtml);reasonCount++;if(reasonCountEl)reasonCountEl.textContent=reasonCount;var actIcon='•',actHtml='';if(t==='scrape'){actIcon='🔍';actHtml='<span class="label label--b">SCRAPE</span>'+r.substring(0,100)}else if(t==='leads'){actIcon='📋';actHtml='<span class="label label--g">LEADS</span>'+r.substring(0,100)}else if(t==='outreach'){actIcon='✉️';actHtml='<span class="label label--a">OUTREACH</span>'+r.substring(0,100)}else if(t==='error'){actIcon='❌';actHtml='<span style="color:var(--red)">Error:</span> '+r.substring(0,80)}else if(t==='system'){actIcon='⚡';actHtml=r}else return;addActivity(actIcon,actHtml)}
+function typeLabel(t){var m={system:'System',scrape:'Scrape',leads:'Leads Found',outreach:'Outreach',error:'Error',skip:'Skipped'};return m[t]||t}
+function addTermLine(type,msg,time,extraClass){if(!termBody)return;var cursor=termBody.querySelector('.term-cursor');var line=document.createElement('div');line.className='term-line';line.innerHTML='<span class="term-time">['+(time||'--:--:--')+']</span><span class="term-type term-type--'+(type||'system')+'">'+type+'</span><span class="term-msg'+(extraClass?' '+extraClass:'')+'">'+msg+'</span>';if(cursor)termBody.insertBefore(line,cursor);else termBody.appendChild(line);termBody.scrollTop=termBody.scrollHeight;var lines=termBody.querySelectorAll('.term-line:not(.term-cursor)');if(lines.length>200)lines[0].remove()}
+function addReason(html){if(!reasonPanel)return;var placeholder=reasonPanel.querySelector('.reason-item:first-child');if(placeholder&&placeholder.textContent.includes('Waiting for'))placeholder.remove();var item=document.createElement('div');item.className='reason-item';item.innerHTML=html;reasonPanel.prepend(item);while(reasonPanel.children.length>50)reasonPanel.removeChild(reasonPanel.lastChild)}
+function addActivity(icon,html){if(!activityFeed)return;var placeholder=activityFeed.querySelector('.side-item:first-child');if(placeholder&&placeholder.textContent.includes('Waiting for'))placeholder.remove();var item=document.createElement('div');item.className='side-item';item.innerHTML='<span class="side-icon">'+icon+'</span><span class="side-txt">'+html+'</span>';activityFeed.prepend(item);activityItems++;while(activityFeed.children.length>50)activityFeed.removeChild(activityFeed.lastChild);if(activityCountEl)activityCountEl.textContent=activityItems}
+function escapeHtml(s){if(!s)return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function fetchStats(){fetch('/api/stats').then(function(r){return r.json()}).then(function(d){if(metricLeads)metricLeads.textContent=d.total_leads||0;if(metricContacted)metricContacted.textContent=d.contacted||0;if(metricNew)metricNew.textContent=d.new_leads||0;if(metricReplied)metricReplied.textContent=d.replied||0}).catch(function(){})}
+function checkSub(){fetch('/api/subscription').then(function(r){return r.json()}).then(function(d){var dot=document.getElementById('subDot');var txt=document.getElementById('subText');var st=document.getElementById('subStatus');if(d.active){dot.style.background='#4ade80';txt.textContent='Active';st.className='sub-status sub-status--active'}else{dot.style.background='#fbbf24';txt.textContent='Starter (free)';st.className='sub-status sub-status--inactive'}}).catch(function(){})}
+function triggerScrape(){var q=document.getElementById('queryInput').value;if(!q){addTermLine('skip','Enter a query first');return}addTermLine('system','Scraping: '+q);var btn=document.getElementById('scrapeBtn');btn.disabled=true;btn.textContent='⏳ Scraping...';fetch('/api/scrape',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q,limit:10})}).then(function(r){return r.json()}).then(function(d){addTermLine('system','Scrape queued (task #'+d.task_id+') — results appear in terminal below');btn.disabled=false;btn.textContent='🔍 Scrape';fetchStats()}).catch(function(e){addTermLine('error','Scrape failed');btn.disabled=false;btn.textContent='🔍 Scrape'})}
+function triggerOutreach(){addTermLine('system','Starting outreach...');var btn=document.getElementById('outreachBtn');btn.disabled=true;btn.textContent='⏳ Sending...';fetch('/api/outreach',{method:'POST'}).then(function(r){return r.json()}).then(function(d){addTermLine('outreach','Sent: '+d.sent+', skipped: '+d.skipped+', failed: '+d.failed);btn.disabled=false;btn.textContent='✉️ Outreach';fetchStats()}).catch(function(e){addTermLine('error','Outreach failed');btn.disabled=false;btn.textContent='✉️ Outreach'})}
+connectWS();fetchStats();checkSub();setInterval(fetchStats,15000);
+fetch('/api/decisions?limit=10').then(function(r){return r.json()}).then(function(d){if(d.events&&d.events.length){d.events.forEach(function(e){renderEvent(e)})}}).catch(function(){});
+fetch('/api/leads?limit=5').then(function(r){return r.json()}).then(function(d){if(d.leads&&d.leads.length){d.leads.forEach(function(l){addActivity(l.email?'✉️':'🔍','<strong>'+l.company_name+'</strong> · stage: '+l.outreach_stage);activityItems++});if(activityCountEl)activityCountEl.textContent=activityItems}}).catch(function(){});
+</script>
+</body>
+</html>

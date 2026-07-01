@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "kimi-webbridge": {
+      "command": "/home/alper/.hermes/node/bin/kimi-webbridge",
+      "args": ["mcp"],
+      "description": "Browser automation via Kimi WebBridge Chrome extension. Provides navigate, click, fill, snapshot, screenshot, evaluate, network capture, PDF export, and tab management.",
+      "env": {
+        "WS_TIMEOUT": "60000"
+      }
+    }
+  }
+}

@@ -1,0 +1,46 @@
+# ── Python ───────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# ── Environment ──────────────────────────────────────────────────────
+.env
+.venv/
+venv/
+
+# ── IDE ──────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── OS ──────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Frontend ────────────────────────────────────────────────────────
+frontend/dist/
+frontend/node_modules/
+
+# ── Coverage / reports ──────────────────────────────────────────────
+.coverage
+htmlcov/
+.pytest_cache/
+
+# ── Run locks ───────────────────────────────────────────────────────
+.locks/
+
+# ── Build / cache artifacts ────────────────────────────────────────
+.vite/
+test-results/
+data/
+
+# ── Claude Code ─────────────────────────────────────────
+.claude/settings.local.json
+
+# ── TypeScript build info ──────────────────────────────
+*.tsbuildinfo

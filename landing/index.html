@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LeadGen — Find 100 qualified leads while you sleep</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@1,400;1,600&display=swap" rel="stylesheet">
+
+<!-- ═══ CDN SCRIPTS ═══ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+  }
+}
+</script>
+
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--ease-out:cubic-bezier(0.16,1,0.3,1);--indigo:#4f46e5;--indigo-light:#818cf8;--purple:#7c3aed;--violet:#8b5cf6;--white:#f8fafc;--gray-400:#94a3b8;--gray-500:#64748b;--gray-600:#475569;--green:#4ade80;--teal:#2dd4bf}
+html{font-size:16px;-webkit-font-smoothing:antialiased;scroll-behavior:smooth}
+body{font-family:'Inter',sans-serif;background:#0a0a0a;color:var(--white);line-height:1.6;overflow-x:hidden}
+
+/* ── Noise overlay ── */
+#noise-overlay{position:fixed;inset:0;z-index:9998;pointer-events:none;opacity:.035;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-repeat:repeat;background-size:256px 256px}
+
+.container{width:100%;max-width:1200px;padding:0 28px;margin:0 auto;position:relative;z-index:1}
+.section-title{font-size:clamp(1.8rem,4vw,2.6rem);font-weight:700;letter-spacing:-.03em;color:var(--white);margin-bottom:12px}
+.section-sub{color:var(--gray-400);font-size:1.05rem;max-width:560px;margin:0 auto 48px;line-height:1.7}
+.section-divider{width:100%;height:1px;background:linear-gradient(to right,transparent,rgba(255,255,255,.04),transparent)}
+
+/* ── Three.js canvas ── */
+#three-canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
+
+/* ── Hero ── */
+.hero{position:relative;width:100%;overflow:hidden;min-height:100dvh;background:#0a0a0a;z-index:1}
+.hero-base{position:absolute;inset:0;z-index:10;background:url('https://images.unsplash.com/photo-1518770660439-4636190af475?w=1920&q=80') center/cover no-repeat}
+.hero-zoom{animation:heroZoom 1.8s cubic-bezier(0.16,1,0.3,1) forwards}
+.reveal-layer{position:absolute;inset:0;z-index:30;pointer-events:none;background:url('https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?w=1920&q=80') center/cover no-repeat;opacity:0}
+.reveal-layer.visible{opacity:1}
+.hero-heading{position:absolute;top:14%;left:0;right:0;z-index:50;display:flex;flex-direction:column;align-items:center;text-align:center;padding:0 20px;pointer-events:none}
+.hero-heading h1{color:#fff;line-height:0.95}
+.hero-heading .line1{display:block;font-family:'Playfair Display',serif;font-style:italic;font-weight:400;font-size:clamp(2.2rem,6vw,4.5rem);letter-spacing:-0.03em}
+.hero-heading .line2{display:block;font-weight:800;font-size:clamp(2.6rem,7vw,5rem);letter-spacing:-0.04em;background:linear-gradient(135deg,#a855f7,#6366f1);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-top:4px}
+.hero-bottom-left{position:absolute;bottom:56px;left:40px;max-width:260px;z-index:50}
+.hero-bottom-left p{font-size:.875rem;color:rgba(255,255,255,0.7);line-height:1.7;display:none}
+.hero-bottom-right{position:absolute;bottom:40px;right:40px;max-width:280px;z-index:50;display:flex;flex-direction:column;align-items:flex-end;gap:16px}
+.hero-bottom-right p{font-size:.8rem;color:rgba(255,255,255,0.65);line-height:1.65;text-align:right}
+.hero-btn{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--indigo),var(--purple));color:#fff;border:none;border-radius:999px;padding:14px 28px;font-size:.9rem;font-weight:600;cursor:pointer;text-decoration:none;transition:all .5s var(--ease-out)}
+.hero-btn:hover{transform:translateY(-2px) scale(1.03);box-shadow:0 0 40px rgba(99,102,241,.3),0 8px 24px rgba(79,70,229,.2)}
+@keyframes heroZoom{0%{transform:scale(1.08)}100%{transform:scale(1)}}
+.anim{opacity:0;animation-fill-mode:forwards;animation-timing-function:cubic-bezier(0.16,1,0.3,1)}
+.anim-reveal{animation-name:heroReveal;animation-duration:1.1s}
+.anim-fade{animation-name:heroFadeUp;animation-duration:1s}
+@keyframes heroReveal{0%{opacity:0;transform:translateY(28px);filter:blur(12px)}100%{opacity:1;transform:translateY(0);filter:blur(0)}}
+@keyframes heroFadeUp{0%{opacity:0;transform:translateY(20px)}100%{opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){.anim,.hero-zoom{animation:none!important;opacity:1!important}}
+
+/* ── Nav ── */
+header{position:fixed;top:0;left:0;right:0;z-index:100}
+header .container{display:flex;align-items:center;justify-content:space-between;padding-top:16px;padding-bottom:16px}
+.logo{display:flex;align-items:center;gap:10px;color:#fff;font-size:1.15rem;font-weight:700;letter-spacing:-.02em;text-decoration:none}
+.logo-icon{width:28px;height:28px;background:linear-gradient(135deg,var(--indigo),var(--purple));border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.7rem;font-weight:800}
+.nav-pill{display:none}
+.nav-pill a{padding:7px 18px;border-radius:999px;font-size:.85rem;font-weight:500;color:rgba(255,255,255,0.7);text-decoration:none;transition:all .3s var(--ease-out);white-space:nowrap;position:relative}
+.nav-pill a::after{content:'';position:absolute;bottom:2px;left:18px;right:18px;height:2px;background:#818cf8;transform:scaleX(0);transform-origin:center;transition:transform .3s var(--ease-out);border-radius:1px}
+.nav-pill a:hover::after,.nav-pill a.active::after{transform:scaleX(1)}
+.nav-pill a:hover{background:rgba(255,255,255,0.12);color:#fff}
+.nav-pill a.active{color:#fff}
+.nav-cta{display:none;background:#fff;color:#111!important;font-size:.85rem;font-weight:600;padding:10px 24px;border-radius:999px;text-decoration:none;transition:all .3s var(--ease-out)}
+.nav-cta:hover{background:#e8e8e8;transform:translateY(-1px)}
+.hamburger{display:flex;color:#fff;background:none;border:none;padding:8px;cursor:pointer}
+@media(min-width:768px){
+  .nav-pill{display:flex;position:absolute;left:50%;transform:translateX(-50%);background:rgba(255,255,255,0.08);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.12);border-radius:999px;padding:4px 6px;align-items:center;gap:2px}
+  .nav-cta{display:block}
+  .hamburger{display:none}
+  .hero-bottom-left p{display:block}
+  .hero-bottom-right{right:56px;bottom:80px}
+}
+
+/* ── Stats ── */
+.stats-section{padding:5rem 0;background:#0a0a0a}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;max-width:800px;margin:0 auto}
+.stat-item{text-align:center;padding:2rem 1rem;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04);border-radius:16px;transition:all .5s var(--ease-out)}
+.stat-item:hover{transform:translateY(-3px);border-color:rgba(129,140,248,.1)}
+.stat-number{font-size:2.2rem;font-weight:800;background:linear-gradient(135deg,var(--indigo-light),#c084fc);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.stat-label{font-size:.8rem;color:var(--gray-500);margin-top:6px}
+@media(max-width:640px){.stats-grid{grid-template-columns:1fr 1fr}}
+
+/* ── How It Works (MAX VERSION) ── */
+.hiw{position:relative;background:#050508;overflow:hidden;padding:0}
+.hiw::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:1px;height:100%;background:linear-gradient(to bottom,transparent,rgba(139,92,246,.15),rgba(139,92,246,.3),rgba(139,92,246,.15),transparent)}
+.hiw-orb{position:absolute;width:500px;height:500px;border-radius:50%;pointer-events:none;filter:blur(120px);opacity:.15}
+.hiw-orb--1{top:-200px;right:-100px;background:#a855f7}
+.hiw-orb--2{bottom:-200px;left:-100px;background:#6366f1;opacity:.1}
+.hiw-intro{min-height:70vh;display:flex;align-items:center;justify-content:center;text-align:center;position:relative;padding:120px 20px 60px}
+.hiw-intro-inner{max-width:800px;position:relative;z-index:2}
+.hiw-floating-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(139,92,246,.1);border:1px solid rgba(139,92,246,.15);border-radius:999px;padding:8px 20px 8px 10px;margin-bottom:32px;font-size:.8rem;color:#a78bfa;animation:fadeSlideUp 1s var(--ease-out) 0.1s both}
+.hiw-floating-badge .pulse-dot{width:8px;height:8px;border-radius:50%;background:#4ade80;box-shadow:0 0 12px rgba(74,222,128,.4);animation:statPulse 2.5s ease-in-out infinite}
+.hiw-intro h2{font-size:clamp(2.4rem,5.5vw,4rem);font-weight:800;line-height:1.05;letter-spacing:-.04em;margin-bottom:20px;animation:fadeSlideUp 1s var(--ease-out) 0.25s both}
+.hiw-intro h2 .grad{background:linear-gradient(135deg,#a855f7,#6366f1,#8b5cf6);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.hiw-intro p{font-size:clamp(1rem,1.8vw,1.2rem);color:var(--gray-400);max-width:600px;margin:0 auto 36px;line-height:1.7;animation:fadeSlideUp 1s var(--ease-out) 0.4s both}
+.hiw-intro .cta-row{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;animation:fadeSlideUp 1s var(--ease-out) 0.55s both}
+.hiw-big-btn{display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;border:none;border-radius:14px;padding:16px 36px;font-size:1rem;font-weight:600;cursor:pointer;text-decoration:none;transition:all .5s var(--ease-out)}
+.hiw-big-btn:hover{transform:translateY(-2px) scale(1.03);box-shadow:0 0 50px rgba(99,102,241,.35),0 16px 40px rgba(79,70,229,.2)}
+.hiw-big-btn-secondary{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);color:#e2e8f0;border-radius:14px;padding:16px 28px;font-size:.95rem;font-weight:500;cursor:pointer;text-decoration:none;transition:all .4s var(--ease-out)}
+.hiw-big-btn-secondary:hover{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.15)}
+@keyframes fadeSlideUp{0%{opacity:0;transform:translateY(24px)}100%{opacity:1;transform:translateY(0)}}
+.hiw-stats{display:flex;justify-content:center;gap:40px;margin-top:40px;flex-wrap:wrap;animation:fadeSlideUp 1s var(--ease-out) 0.7s both}
+.hiw-stat{text-align:center}
+.hiw-stat-num{font-size:2rem;font-weight:800;background:linear-gradient(135deg,#a78bfa,#818cf8);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.hiw-stat-label{font-size:.72rem;color:var(--gray-500);margin-top:4px;text-transform:uppercase;letter-spacing:.06em}
+
+/* ── Steps journey ── */
+.hiw-journey{position:relative;width:100%;margin:0 auto}
+.hiw-step{display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;min-height:100vh;padding:10rem 40px;opacity:0;transition:opacity 0.9s cubic-bezier(0.16,1,0.3,1),transform 0.9s cubic-bezier(0.16,1,0.3,1)}
+.hiw-step.visible{opacity:1}
+.hiw-step.dim{opacity:0.08;transform:translateY(-10px)}
+.hiw-step:nth-child(even){direction:rtl}
+.hiw-step:nth-child(even) .hiw-step-content{direction:ltr}
+.hiw-step:nth-child(even) .hiw-step-visual{direction:ltr}
+.hiw-step-content{padding:20px 0}
+.hiw-step-label{font-size:.7rem;font-weight:600;color:#a78bfa;text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.hiw-step-label::before{content:'';width:24px;height:1.5px;background:#a78bfa}
+.hiw-step h3{font-size:clamp(1.5rem,3vw,2.2rem);font-weight:700;letter-spacing:-.03em;margin-bottom:14px;line-height:1.1}
+.hiw-step p{font-size:.92rem;color:var(--gray-400);line-height:1.7;max-width:440px}
+.hiw-step p strong{color:#e2e8f0;font-weight:500}
+.hiw-step-visual{position:relative;display:flex;align-items:center;justify-content:center;min-height:220px}
+.hiw-step:nth-child(even){direction:rtl}
+.hiw-step:nth-child(even) .hiw-step-content{direction:ltr}
+.hiw-step:nth-child(even) .hiw-step-visual{direction:ltr}
+.hiw-step-number{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#4f46e5,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:800;color:#fff;z-index:5;box-shadow:0 0 40px rgba(99,102,241,.2);border:3px solid #0d0d0d}
+.hiw-step-content{padding:20px 0}
+.hiw-step-label{font-size:.7rem;font-weight:600;color:#a78bfa;text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.hiw-step-label::before{content:'';width:24px;height:1.5px;background:#a78bfa}
+.hiw-step h3{font-size:clamp(1.5rem,3vw,2.2rem);font-weight:700;letter-spacing:-.03em;margin-bottom:14px;line-height:1.1}
+.hiw-step p{font-size:.92rem;color:var(--gray-400);line-height:1.7;max-width:440px}
+.hiw-step p strong{color:#e2e8f0;font-weight:500}
+.hiw-step-visual{position:relative;display:flex;align-items:center;justify-content:center;min-height:220px}
+.hiw-step-card{width:100%;max-width:380px;background:linear-gradient(145deg,rgba(255,255,255,.02),rgba(139,92,246,.02));border:1px solid rgba(139,92,246,.08);border-radius:24px;padding:2.5rem 2rem;backdrop-filter:blur(20px);overflow:hidden;position:relative;transition:all .6s var(--ease-out)}
+.hiw-step-card:hover{transform:translateY(-4px) scale(1.01);border-color:rgba(139,92,246,.15);box-shadow:0 30px 60px rgba(0,0,0,.3),0 0 40px rgba(139,92,246,.04)}
+.hiw-step-card-glow{position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(circle at 50% 50%,rgba(139,92,246,.03),transparent 60%);pointer-events:none;animation:rotGlow 20s linear infinite}
+@keyframes rotGlow{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+.hiw-step-card-icon{width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,rgba(139,92,246,.12),rgba(99,102,241,.08));border:1px solid rgba(139,92,246,.1);display:flex;align-items:center;justify-content:center;margin-bottom:16px;font-size:1.5rem}
+.hiw-step-card h4{font-size:1rem;font-weight:600;color:#e2e8f0;margin-bottom:6px}
+.hiw-step-card p{font-size:.8rem;color:var(--gray-400);line-height:1.55}
+.hiw-step:first-child .hiw-step-number{display:flex}
+@media(max-width:900px){
+  .hiw-step{grid-template-columns:1fr;direction:ltr;gap:24px;text-align:center}
+  .hiw-step-content{text-align:center}
+  .hiw-step p{margin:0 auto}
+  .hiw-step-label{justify-content:center}
+  .hiw-step-number{margin:0 auto 20px;width:56px;height:56px;font-size:1.1rem}
+}
+
+/* ── Features Bento ── */
+.features{padding:7rem 0;background:#0a0a0a}
+.features .container{text-align:center}
+.bento{display:grid;grid-template-columns:236px 1fr 236px;grid-template-rows:auto auto;gap:16px;margin-top:40px;text-align:left}
+@media(max-width:1100px){.bento{grid-template-columns:1fr 1fr;grid-template-rows:auto}}
+@media(max-width:640px){.bento{grid-template-columns:1fr}}
+.b-item{background:#111;border:1px solid #222;border-radius:20px;padding:1.75rem;transition:all .5s var(--ease-out);position:relative;overflow:hidden;display:flex;flex-direction:column}
+.b-item:hover{border-color:rgba(139,92,246,.3);box-shadow:0 0 30px rgba(139,92,246,.15);transform:translateY(-2px)}
+.b-item-lg{grid-column:1/3}
+.b-item-wide{grid-column:2/4}
+.b-item h3{font-size:.9rem;font-weight:600;color:#e2e8f0;margin-bottom:4px}
+.b-item p{font-size:.78rem;color:var(--gray-400);line-height:1.55;flex:1}
+
+/* ── Mini visualizations ── */
+.map-dots{position:relative;width:100%;height:80px;margin-top:auto;overflow:hidden;border-radius:10px;background:rgba(99,102,241,.03)}
+.map-dots .dot{position:absolute;width:6px;height:6px;border-radius:50%;background:var(--violet);opacity:0;animation:mapDot 3s ease-in-out infinite}
+.map-dots .dot:nth-child(1){top:20%;left:20%;animation-delay:0s}
+.map-dots .dot:nth-child(2){top:50%;left:55%;animation-delay:.6s;width:8px;height:8px;background:var(--green)}
+.map-dots .dot:nth-child(3){top:70%;left:35%;animation-delay:1.2s}
+.map-dots .dot:nth-child(4){top:30%;left:70%;animation-delay:.3s;background:var(--indigo-light)}
+.map-dots .dot:nth-child(5){top:60%;left:15%;animation-delay:.9s;width:4px;height:4px}
+.map-dots .dot:nth-child(6){top:80%;left:80%;animation-delay:1.5s;background:var(--green);width:7px;height:7px}
+.map-dots .pulse-ring{position:absolute;width:20px;height:20px;border-radius:50%;border:2px solid var(--violet);opacity:0;animation:mapPulse 3s ease-in-out infinite}
+.map-dots .pulse-ring:nth-child(7){top:48%;left:53%;animation-delay:.6s}
+@keyframes mapDot{0%,100%{opacity:0;transform:scale(0)}30%,70%{opacity:1;transform:scale(1)}}
+@keyframes mapPulse{0%,100%{opacity:0;transform:scale(.5)}30%{opacity:.6;transform:scale(1.5)}60%{opacity:0;transform:scale(2)}}
+
+.typing-box{width:100%;margin-top:auto;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.04);border-radius:10px;padding:12px;font-size:.72rem;font-family:'SF Mono','Fira Code',monospace;color:var(--gray-400);min-height:56px}
+.typing-box .cursor{display:inline-block;width:2px;height:14px;background:var(--indigo-light);animation:blink 1s step-end infinite;vertical-align:text-bottom;margin-left:2px}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.typing-text{overflow:hidden;white-space:nowrap;animation:typewrite 3s steps(40) infinite;display:inline-block;max-width:100%;vertical-align:bottom}
+@keyframes typewrite{0%{width:0}50%{width:100%}80%{width:100%}100%{width:0}}
+
+.counter-display{font-size:2.8rem;font-weight:800;margin-top:auto;background:linear-gradient(135deg,var(--indigo-light),var(--purple));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.counter-display span{display:inline-block;min-width:3ch}
+
+.status-pulse{display:flex;align-items:center;gap:10px;margin-top:auto;padding:8px 0}
+.status-dot{width:10px;height:10px;border-radius:50%;background:var(--green);box-shadow:0 0 12px rgba(74,222,128,.5);animation:statPulse 2s ease-in-out infinite}
+@keyframes statPulse{0%,100%{box-shadow:0 0 8px rgba(74,222,128,.2)}50%{box-shadow:0 0 20px rgba(74,222,128,.5)}}
+.status-label{font-size:.8rem;font-weight:500;color:var(--green)}
+.status-sub{font-size:.68rem;color:var(--gray-500);margin-top:2px}
+
+.bar-chart{display:flex;align-items:flex-end;gap:6px;height:60px;margin-top:auto;padding-top:12px}
+.bar{width:100%;border-radius:4px 4px 0 0;min-height:4px;transition:height 1.2s var(--ease-out);background:linear-gradient(to top,var(--indigo),var(--purple))}
+.bar:nth-child(1){height:28px}.bar:nth-child(2){height:44px}.bar:nth-child(3){height:18px}.bar:nth-child(4){height:52px}.bar:nth-child(5){height:36px}.bar:nth-child(6){height:60px}.bar:nth-child(7){height:24px}
+.bar.animate{animation:barGrow 1.2s var(--ease-out) forwards}
+@keyframes barGrow{from{height:4px}}
+
+/* ── Testimonials ── */
+.testimonials{padding:5rem 0;background:#0d0d0d;overflow:hidden}
+.testimonials .container{text-align:center}
+.marquee{display:flex;gap:20px;animation:marq 60s linear infinite;width:max-content;padding-bottom:8px}
+.marquee:hover{animation-play-state:paused}
+@keyframes marq{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.t-card{min-width:320px;background:rgba(255,255,255,.02);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.05);border-radius:18px;padding:1.5rem 1.75rem;text-align:left;flex-shrink:0;transition:all .5s var(--ease-out);perspective:800px}
+.t-card:hover{transform:translateY(-4px);border-color:rgba(139,92,246,.2);box-shadow:0 12px 40px rgba(139,92,246,.06)}
+.t-stars{color:#fbbf24;font-size:.85rem;margin-bottom:10px}
+.t-text{font-size:.82rem;color:var(--gray-400);line-height:1.6;margin-bottom:16px;font-style:italic}
+.t-author{display:flex;align-items:center;gap:10px}
+.t-av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--indigo),var(--purple));display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:600;color:#fff;flex-shrink:0}
+.t-name{font-size:.82rem;font-weight:500;color:#e2e8f0}
+.t-role{font-size:.68rem;color:var(--gray-500)}
+
+/* ── Pricing ── */
+.pricing{padding:7rem 0;background:#0a0a0a}
+.pricing .container{text-align:center}
+.p-grid{display:grid;grid-template-columns:1fr 1.12fr 1fr;gap:20px;max-width:960px;margin:40px auto 0;align-items:center}
+@media(max-width:900px){.p-grid{grid-template-columns:1fr;max-width:420px;margin:0 auto}}
+.p-card{background:rgba(255,255,255,.02);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.06);border-radius:24px;padding:2.5rem 2rem;text-align:left;transition:all .5s var(--ease-out);position:relative;perspective:800px}
+.p-card:hover{transform:translateY(-8px);border-color:rgba(139,92,246,.25);box-shadow:0 30px 60px rgba(0,0,0,.3),0 0 40px rgba(139,92,246,.06)}
+.p-card.featured{background:rgba(139,92,246,.04);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1.5px solid rgba(139,92,246,.25);box-shadow:0 0 60px rgba(139,92,246,.04),inset 0 0 60px rgba(139,92,246,.02);transform:scale(1.05);z-index:2}
+.p-card.featured:hover{transform:scale(1.05) translateY(-8px);border-color:rgba(139,92,246,.4);box-shadow:0 0 80px rgba(139,92,246,.08),inset 0 0 60px rgba(139,92,246,.02)}
+.p-badge{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,var(--indigo),var(--purple));color:#fff;font-size:.66rem;font-weight:600;padding:5px 20px;border-radius:999px;text-transform:uppercase;letter-spacing:.05em;box-shadow:0 0 25px rgba(99,102,241,.25);white-space:nowrap}
+.p-name{font-size:.95rem;font-weight:600;color:#e2e8f0;margin-bottom:8px}
+.p-price{font-size:2.8rem;font-weight:800;line-height:1;margin-bottom:4px;letter-spacing:-.03em}
+.p-price sub{font-size:1rem;font-weight:400;color:var(--gray-500);vertical-align:baseline}
+.p-desc{font-size:.82rem;color:var(--gray-500);margin-bottom:24px}
+.p-feats{list-style:none;margin-bottom:28px}
+.p-feats li{display:flex;align-items:center;gap:10px;padding:7px 0;font-size:.82rem;color:var(--gray-400)}
+.p-feats li svg{width:16px;height:16px;color:var(--violet);flex-shrink:0}
+.p-card .btn-primary{width:100%;justify-content:center;padding:14px;display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--indigo),var(--purple));color:#fff;border:none;border-radius:14px;font-size:.9rem;font-weight:600;cursor:pointer;text-decoration:none;transition:all .4s var(--ease-out)}
+.p-card .btn-primary:hover{transform:translateY(-2px);box-shadow:0 0 30px rgba(99,102,241,.3)}
+.p-card .btn-secondary-card{width:100%;justify-content:center;padding:14px;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);color:#e2e8f0;border-radius:14px;font-size:.9rem;font-weight:500;cursor:pointer;text-decoration:none;transition:all .4s var(--ease-out)}
+.p-card .btn-secondary-card:hover{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.15)}
+@media(max-width:900px){.p-card.featured{transform:none}.p-card.featured:hover{transform:translateY(-8px)}}
+
+/* ── CTA ── */
+.cta-section{padding:8rem 0;text-align:center;position:relative;overflow:hidden;background:#0d0d0d}
+.cta-section::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(139,92,246,.05),rgba(99,102,241,.03),rgba(168,85,247,.05));background-size:400% 400%;animation:gradientShift 8s ease-in-out infinite;pointer-events:none}
+@keyframes gradientShift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.cta-section h2{font-size:clamp(2rem,5vw,3.2rem);font-weight:800;line-height:1.08;letter-spacing:-.04em;margin-bottom:16px;position:relative;z-index:1}
+.cta-section p{font-size:1.05rem;color:var(--gray-400);max-width:480px;margin:0 auto 32px;line-height:1.65;position:relative;z-index:1}
+.cta-email-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;position:relative;z-index:1}
+.cta-input{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px 20px;font-size:.9rem;color:#fff;outline:none;min-width:280px;transition:border-color .3s var(--ease-out);font-family:'Inter',sans-serif}
+.cta-input::placeholder{color:var(--gray-500)}
+.cta-input:focus{border-color:rgba(139,92,246,.3)}
+
+/* ── Footer ── */
+footer{padding:40px 0;background:rgba(0,0,0,.4)}
+footer .container{display:flex;align-items:center;justify-content:space-between}
+footer nav{display:flex;gap:20px}
+footer nav a{color:var(--gray-500);text-decoration:none;font-size:.85rem;transition:color .3s var(--ease-out)}
+footer nav a:hover{color:#e2e8f0}
+.copy{color:var(--gray-600);font-size:.82rem}
+@media(max-width:640px){footer .container{flex-direction:column;gap:16px;text-align:center}}
+
+/* ── Scroll reveal ── */
+.reveal{opacity:0;transform:translateY(40px);transition:opacity .8s var(--ease-out),transform .8s var(--ease-out)}
+.reveal.visible{opacity:1;transform:translateY(0)}
+.d1{transition-delay:.1s}.d2{transition-delay:.2s}.d3{transition-delay:.3s}.d4{transition-delay:.4s}.d5{transition-delay:.5s}.d6{transition-delay:.6s}
+
+@media(prefers-reduced-motion:reduce){.anim,.hero-zoom,.marquee,.hiw-orb,.hiw-step-card-glow{animation:none!important;opacity:1!important}#noise-overlay{display:none}}
+</style>
+</head>
+<body>
+
+<div id="noise-overlay"></div>
+<canvas id="three-canvas"></canvas>
+
+<header>
+<div class="container">
+  <a href="/" class="logo"><span class="logo-icon">LG</span>LeadGen</a>
+  <nav class="nav-pill">
+    <a href="#how">How It Works</a>
+    <a href="#features">Features</a>
+    <a href="#pricing">Pricing</a>
+    <a href="/dashboard">Dashboard</a>
+    <a href="/subscribe" class="active" style="background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff!important;padding:7px 20px">Start Free Trial</a>
+  </nav>
+  <a href="/subscribe" class="nav-cta">Start Free Trial</a>
+  <button class="hamburger" aria-label="Menu">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+  </button>
+</div>
+</header>
+
+<!-- ═══ HERO ═══ -->
+<section class="hero" id="hero">
+  <canvas id="spotlightCanvas" style="position:absolute;inset:0;display:none;pointer-events:none"></canvas>
+  <div class="hero-base hero-zoom"></div>
+  <div class="reveal-layer visible" id="revealLayer"></div>
+  <div class="hero-heading" id="heroHeading">
+    <h1>
+      <span class="line1 anim anim-reveal" style="animation-delay:0.25s">Find 100 qualified leads</span>
+      <span class="line2 anim anim-reveal" style="animation-delay:0.42s">while you sleep</span>
+    </h1>
+  </div>
+  <div class="hero-bottom-left anim anim-fade" style="animation-delay:0.7s">
+    <p>Searches Google, finds your ideal customers, and sends personalized cold emails — fully autonomous. Set a query and wake up to prospects.</p>
+  </div>
+  <div class="hero-bottom-right anim anim-fade" style="animation-delay:0.85s">
+    <p>Autonomous lead generation · 24/7 agent</p>
+    <a href="/subscribe" class="hero-btn magnetic-btn">Start Free Trial<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+  </div>
+</section>
+
+<!-- ═══ STATS ═══ -->
+<section class="stats-section"><div class="container"><div class="stats-grid">
+  <div class="stat-item reveal"><div class="stat-number gsap-count" data-target="88">0</div><div class="stat-label">Leads Collected</div></div>
+  <div class="stat-item reveal d1"><div class="stat-number">4</div><div class="stat-label">Simple Steps</div></div>
+  <div class="stat-item reveal d2"><div class="stat-number">24/7</div><div class="stat-label">Autonomous Operation</div></div>
+  <div class="stat-item reveal d3"><div class="stat-number gsap-count" data-target="500">0</div><div class="stat-label">Leads / Month</div></div>
+</div></div></section>
+
+<div class="section-divider"></div>
+
+<!-- ═══ HOW IT WORKS ═══ -->
+<section class="hiw" id="how">
+  <div class="hiw-orb hiw-orb--1"></div>
+  <div class="hiw-orb hiw-orb--2"></div>
+
+  <div class="hiw-intro">
+    <div class="hiw-intro-inner">
+      <div class="hiw-floating-badge">
+        <span class="pulse-dot"></span>
+        <span>4 simple steps · <strong style="color:#f8fafc;font-weight:600">fully autonomous</strong></span>
+      </div>
+      <h2>From zero to <span class="grad">qualified leads</span><br>in four steps</h2>
+      <p>No templates. No manual work. Just set a target and let the AI agent do everything — from searching Google to sending personalized emails.</p>
+      <div class="cta-row">
+        <a href="/subscribe" class="hiw-big-btn magnetic-btn">Start Free Trial <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+      </div>
+      <div class="hiw-stats">
+        <div class="hiw-stat"><div class="hiw-stat-num gsap-count" data-target="88">0</div><div class="hiw-stat-label">Leads Generated</div></div>
+        <div class="hiw-stat"><div class="hiw-stat-num">4</div><div class="hiw-stat-label">Simple Steps</div></div>
+        <div class="hiw-stat"><div class="hiw-stat-num">24/7</div><div class="hiw-stat-label">Autonomous</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hiw-journey" id="hiwJourney">
+    <div class="hiw-step gsap-step-card" data-step="0">
+      <div class="hiw-step-number">01</div>
+      <div class="hiw-step-content">
+        <div class="hiw-step-label">Step One</div>
+        <h3>Define your target market</h3>
+        <p>Enter a query like <strong>"Digital agencies in Berlin"</strong> or <strong>"SaaS founders in London."</strong> The AI knows exactly who to look for.</p>
+      </div>
+      <div class="hiw-step-visual">
+        <div class="hiw-step-card">
+          <div class="hiw-step-card-glow"></div>
+          <div class="hiw-step-card-icon">🎯</div>
+          <h4>Example query</h4>
+          <p style="font-family:'SF Mono','Fira Code',monospace;font-size:.78rem;color:#a78bfa;background:rgba(139,92,246,.06);padding:10px 14px;border-radius:10px;margin-top:8px;border:1px solid rgba(139,92,246,.06)">"Digital agencies in Berlin that serve SMEs"</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="hiw-step gsap-step-card" data-step="1">
+      <div class="hiw-step-number">02</div>
+      <div class="hiw-step-content">
+        <div class="hiw-step-label">Step Two</div>
+        <h3>AI searches the web 24/7</h3>
+        <p>Our Chrome automation navigates Google, directories, and business databases. It extracts <strong>company names, websites, emails</strong> — everything you need.</p>
+      </div>
+      <div class="hiw-step-visual">
+        <div class="hiw-step-card">
+          <div class="hiw-step-card-glow"></div>
+          <div class="hiw-step-card-icon">🔍</div>
+          <h4>Autonomous scraping</h4>
+          <div style="display:flex;gap:4px;margin-top:12px;flex-wrap:wrap">
+            <span style="font-size:.65rem;padding:4px 10px;background:rgba(139,92,246,.08);border-radius:999px;color:#a78bfa">Google Search</span>
+            <span style="font-size:.65rem;padding:4px 10px;background:rgba(99,102,241,.08);border-radius:999px;color:#818cf8">Directories</span>
+            <span style="font-size:.65rem;padding:4px 10px;background:rgba(74,222,128,.08);border-radius:999px;color:#4ade80">Email Extract</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hiw-step gsap-step-card" data-step="2">
+      <div class="hiw-step-number">03</div>
+      <div class="hiw-step-content">
+        <div class="hiw-step-label">Step Three</div>
+        <h3>AI enriches every lead</h3>
+        <p>Leads are <strong>deduplicated, scored by relevance, and enriched</strong> with context. Every decision is logged — full transparency into how the agent thinks.</p>
+      </div>
+      <div class="hiw-step-visual">
+        <div class="hiw-step-card">
+          <div class="hiw-step-card-glow"></div>
+          <div class="hiw-step-card-icon">🧠</div>
+          <h4>AI processing pipeline</h4>
+          <div style="margin-top:12px;display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;align-items:center;gap:8px;font-size:.72rem;color:var(--gray-400)"><span style="color:#4ade80">✓</span> Deduplicate 12 leads</div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:.72rem;color:var(--gray-400)"><span style="color:#4ade80">✓</span> Score by relevance — 9/12 qualified</div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:.72rem;color:var(--gray-400)"><span style="color:#4ade80">✓</span> Enrich with website context</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hiw-step gsap-step-card" data-step="3">
+      <div class="hiw-step-number">04</div>
+      <div class="hiw-step-content">
+        <div class="hiw-step-label">Step Four</div>
+        <h3>Personalized outreach on autopilot</h3>
+        <p>Each lead receives a <strong>unique cold email</strong> referencing their company name, website, and context. Delivered via SendGrid. You just sit back and watch replies roll in.</p>
+      </div>
+      <div class="hiw-step-visual">
+        <div class="hiw-step-card">
+          <div class="hiw-step-card-glow"></div>
+          <div class="hiw-step-card-icon">✉️</div>
+          <h4>Sample email</h4>
+          <div style="background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.04);border-radius:10px;padding:10px 14px;margin-top:8px;font-size:.72rem;color:var(--gray-400);text-align:left">
+            <div style="color:#818cf8;margin-bottom:4px">To: contact@agency.com</div>
+            <div><strong style="color:#e2e8f0">Hi Acme team,</strong> I came across your work in Berlin and was impressed...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ═══ FEATURES ═══ -->
+<section class="features" id="features"><div class="container">
+<h2 class="section-title reveal">Everything You Need</h2>
+<p class="section-sub reveal d1">An autonomous sales engine that works around the clock.</p>
+<div class="bento">
+  <div class="b-item b-item-lg reveal d2">
+    <h3>🌍 Multi-Source Scraping</h3>
+    <p>Real Chrome automation navigates Google, directories, and business databases. Structured extraction, noise filtered.</p>
+    <div class="map-dots">
+      <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+      <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+      <span class="pulse-ring"></span>
+    </div>
+  </div>
+  <div class="b-item b-item-wide reveal d2">
+    <h3>✉️ AI-Powered Email Outreach</h3>
+    <p>Each cold email is unique — company name, website context, tailored messaging. Delivered via SendGrid.</p>
+    <div class="typing-box pipeline-box">
+      <span class="cursor"></span>
+    </div>
+  </div>
+  <div class="b-item reveal d3">
+    <h3>📋 Lead Database</h3>
+    <p>Deduplicated storage. Know who's contacted, who replied, who needs follow-up.</p>
+    <div class="counter-display"><span id="leadCounter">0</span></div>
+  </div>
+  <div class="b-item reveal d3">
+    <h3>⚡ Live Telemetry</h3>
+    <p>Every decision streams to the dashboard via WebSocket.</p>
+    <div class="status-pulse">
+      <span class="status-dot"></span>
+      <div><div class="status-label">Agent Active</div><div class="status-sub">24/7 autonomous operation</div></div>
+    </div>
+  </div>
+  <div class="b-item b-item-wide reveal d4">
+    <h3>📊 Analytics &amp; Insights</h3>
+    <p>Track leads collected, emails sent, reply rates. Data-driven pipeline performance.</p>
+    <div class="bar-chart" id="barChart">
+      <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+      <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+    </div>
+  </div>
+</div>
+</div></section>
+
+<div class="section-divider"></div>
+
+<!-- ═══ TESTIMONIALS ═══ -->
+<section class="testimonials"><div class="container" style="margin-bottom:32px">
+<h2 class="section-title reveal">Trusted by Sales Teams</h2>
+<p class="section-sub reveal d1">From solo founders to growing agencies.</p>
+</div>
+<div class="marquee">
+  <div class="t-card"><div class="t-stars">★★★★★</div><div class="t-text">"LeadGen saved us 20 hours a week on prospecting. We went from 10 cold emails a week to 200. The ROI is incredible."</div><div class="t-author"><div class="t-av">SK</div><div><div class="t-name">Sarah Kim</div><div class="t-role">CEO, BrightStudio</div></div></div></div>
+  <div class="t-card"><div class="t-stars">★★★★★</div><div class="t-text">"Setup took 5 minutes. The AI found 47 agencies in our niche within an hour. Our reply rate is 34%."</div><div class="t-author"><div class="t-av">MJ</div><div><div class="t-name">Marcus James</div><div class="t-role">Founder, ScaleLab</div></div></div></div>
+  <div class="t-card"><div class="t-stars">★★★★★</div><div class="t-text">"The live dashboard is incredible. I can watch the agent scrape and send emails in real time. Pure magic."</div><div class="t-author"><div class="t-av">AL</div><div><div class="t-name">Ana Lopez</div><div class="t-role">Sales Director, Nexus</div></div></div></div>
+  <div class="t-card"><div class="t-stars">★★★★★</div><div class="t-text">"We closed 3 enterprise deals from the first batch. This pays for itself 10x over every single month."</div><div class="t-author"><div class="t-av">DT</div><div><div class="t-name">David Tran</div><div class="t-role">CTO, CodeBridge</div></div></div></div>
+  <div class="t-card"><div class="t-stars">★★★★★</div><div class="t-text">"LeadGen saved us 20 hours a week on prospecting. We went from 10 cold emails a week to 200. The ROI is incredible."</div><div class="t-author"><div class="t-av">SK</div><div><div class="t-name">Sarah Kim</div><div class="t-role">CEO, BrightStudio</div></div></div></div>
+  <div class="t-card"><div class="t-stars">★★★★★</div><div class="t-text">"Setup took 5 minutes. The AI found 47 agencies in our niche within an hour. Our reply rate is 34%."</div><div class="t-author"><div class="t-av">MJ</div><div><div class="t-name">Marcus James</div><div class="t-role">Founder, ScaleLab</div></div></div></div>
+  <div class="t-card"><div class="t-stars">★★★★★</div><div class="t-text">"The live dashboard is incredible. I can watch the agent scrape and send emails in real time. Pure magic."</div><div class="t-author"><div class="t-av">AL</div><div><div class="t-name">Ana Lopez</div><div class="t-role">Sales Director, Nexus</div></div></div></div>
+  <div class="t-card"><div class="t-stars">★★★★★</div><div class="t-text">"We closed 3 enterprise deals from the first batch. This pays for itself 10x over every single month."</div><div class="t-author"><div class="t-av">DT</div><div><div class="t-name">David Tran</div><div class="t-role">CTO, CodeBridge</div></div></div></div>
+</div></section>
+
+<div class="section-divider"></div>
+
+<!-- ═══ PRICING ═══ -->
+<section class="pricing" id="pricing"><div class="container">
+<h2 class="section-title reveal">Simple, Transparent Pricing</h2>
+<p class="section-sub reveal d1">Everything you need. Start with a 14-day free trial.</p>
+<div class="p-grid" id="pricingGrid">
+  <div class="p-card reveal d2 gsap-pricing-card">
+    <div class="p-name">Starter</div>
+    <div class="p-price">$49<sub>/mo</sub></div>
+    <div class="p-desc">For solo founders testing the waters</div>
+    <ul class="p-feats"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>200 leads per month</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Automated Google scraping</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>1 target query at a time</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Dry-run email previews</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Live telemetry dashboard</li></ul>
+    <a href="/subscribe" class="btn-secondary-card magnetic-btn">Start Free Trial</a>
+  </div>
+  <div class="p-card featured reveal d3 gsap-pricing-card" data-featured="true">
+    <div class="p-badge">Most Popular</div>
+    <div class="p-name">Pro</div>
+    <div class="p-price">$99<sub>/mo</sub></div>
+    <div class="p-desc">For serious sales teams &amp; agencies</div>
+    <ul class="p-feats"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg><strong style="color:var(--white)">500 leads per month</strong></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Multi-query scraping</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Real email sending (SendGrid)</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>LLM-powered personalization</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Full analytics &amp; reporting</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Priority email support</li></ul>
+    <a href="/subscribe" class="btn-primary magnetic-btn">Start Free Trial</a>
+  </div>
+  <div class="p-card reveal d4 gsap-pricing-card">
+    <div class="p-name">Enterprise</div>
+    <div class="p-price">$249<sub>/mo</sub></div>
+    <div class="p-desc">For large teams &amp; custom needs</div>
+    <ul class="p-feats"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Unlimited leads &amp; queries</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Custom scraping sources</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Multi-user team access</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Full REST API access</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Dedicated support &amp; onboarding</li></ul>
+    <a href="/subscribe" class="btn-secondary-card magnetic-btn">Contact Sales</a>
+  </div>
+</div></div></section>
+
+<div class="section-divider"></div>
+
+<!-- ═══ CTA ═══ -->
+<section class="cta-section" id="cta"><div class="container" style="position:relative;z-index:1">
+<h2 class="reveal">Start Finding Leads Tonight.</h2>
+<p class="reveal d1">14-day free trial. No risk. Cancel anytime. Set a query and wake up to prospects.</p>
+<div class="reveal d2">
+<div class="cta-email-row">
+  <a href="/subscribe" class="hero-btn magnetic-btn" style="padding:16px 36px;font-size:1rem">Start Free Trial<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+</div>
+</div></div></section>
+
+<!-- ═══ FOOTER ═══ -->
+<footer><div class="container">
+<div class="logo" style="font-size:.9rem;color:#94a3b8"><span class="logo-icon" style="width:26px;height:26px;font-size:.65rem">LG</span>LeadGen</div>
+<nav><a href="/health">Status</a><a href="/dashboard">Dashboard</a><a href="#">Privacy</a><a href="#">Terms</a></nav>
+<div class="copy">&copy; 2026 LeadGen</div>
+</div></footer>
+
+<!-- ═══ SCRIPTS ═══ -->
+<script>
+// ── Spotlight (original, preserved) ──
+(function(){
+  var SPOTLIGHT_R = 260;
+  var canvas = document.getElementById('spotlightCanvas');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var revealLayer = document.getElementById('revealLayer');
+  var mouseX = -999, mouseY = -999;
+  var smoothX = -999, smoothY = -999;
+  function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+  resize();
+  window.addEventListener('resize', resize);
+  document.addEventListener('mousemove', function(e) { mouseX = e.clientX; mouseY = e.clientY; });
+  function draw() {
+    smoothX += (mouseX - smoothX) * 0.1;
+    smoothY += (mouseY - smoothY) * 0.1;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    var grad = ctx.createRadialGradient(smoothX, smoothY, 0, smoothX, smoothY, SPOTLIGHT_R);
+    grad.addColorStop(0, 'rgba(255,255,255,1)');
+    grad.addColorStop(0.4, 'rgba(255,255,255,1)');
+    grad.addColorStop(0.6, 'rgba(255,255,255,0.75)');
+    grad.addColorStop(0.75, 'rgba(255,255,255,0.4)');
+    grad.addColorStop(0.88, 'rgba(255,255,255,0.12)');
+    grad.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(smoothX, smoothY, SPOTLIGHT_R, 0, Math.PI * 2);
+    ctx.fill();
+    var dataUrl = canvas.toDataURL();
+    revealLayer.style.webkitMaskImage = 'url(' + dataUrl + ')';
+    revealLayer.style.maskImage = 'url(' + dataUrl + ')';
+    revealLayer.style.webkitMaskSize = '100% 100%';
+    revealLayer.style.maskSize = '100% 100%';
+    requestAnimationFrame(draw);
+  }
+  revealLayer.style.opacity = '1';
+  requestAnimationFrame(draw);
+})();
+
+// ── Three.js Particle System ──
+(async function(){
+  var canvas = document.getElementById('three-canvas');
+  if (!canvas) return;
+  var THREE = await import('three');
+  if (!THREE.Scene) return;
+  var scene = new THREE.Scene();
+  var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+  var renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+  // Particles — mix indigo and purple
+  var count = 220;
+  var positions = new Float32Array(count * 3);
+  var colors = new Float32Array(count * 3);
+  var sizes = new Float32Array(count);
+  var indigo = new THREE.Color(0x6366f1);
+  var purple = new THREE.Color(0x8b5cf6);
+  for (var i = 0; i < count; i++) {
+    positions[i*3] = (Math.random() - 0.5) * 22;
+    positions[i*3+1] = (Math.random() - 0.5) * 22;
+    positions[i*3+2] = (Math.random() - 0.5) * 20 - 5;
+    var c = indigo.clone().lerp(purple, Math.random());
+    colors[i*3] = c.r; colors[i*3+1] = c.g; colors[i*3+2] = c.b;
+    sizes[i] = Math.random() * 2.5 + 0.5;
+  }
+  var geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+  var material = new THREE.PointsMaterial({
+    size: 0.07,
+    transparent: true,
+    opacity: 0.45,
+    vertexColors: true,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    sizeAttenuation: true,
+  });
+  var particles = new THREE.Points(geometry, material);
+  scene.add(particles);
+
+  var mouse = { x: 0, y: 0 };
+  document.addEventListener('mousemove', function(e) {
+    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+  });
+
+  camera.position.z = 10;
+
+  function animate() {
+    particles.rotation.x += 0.0003;
+    particles.rotation.y += 0.0005;
+    // Parallax response to mouse
+    particles.rotation.x += mouse.y * 0.0008;
+    particles.rotation.y += mouse.x * 0.0008;
+    renderer.render(scene, camera);
+    requestAnimationFrame(animate);
+  }
+  animate();
+
+  window.addEventListener('resize', function() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+})();
+
+// ── GSAP Scroll Animations ──
+(function(){
+  if (typeof gsap === 'undefined') return;
+  gsap.registerPlugin(ScrollTrigger);
+
+  // Hero text scale/fade on scroll
+  var heroH1 = document.querySelector('.hero-heading h1');
+  if (heroH1) {
+    gsap.to(heroH1, {
+      scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: 0.8 },
+      scale: 0.85, opacity: 0.3, ease: 'power2.out'
+    });
+  }
+
+  // Stats count-up
+  document.querySelectorAll('.gsap-count').forEach(function(el) {
+    var target = parseInt(el.getAttribute('data-target')) || 88;
+    ScrollTrigger.create({
+      trigger: el,
+      start: 'top 85%',
+      once: true,
+      onEnter: function() {
+        gsap.to(el, {
+          innerText: target,
+          duration: 1.5,
+          ease: 'power2.out',
+          snap: { innerText: 1 },
+          onUpdate: function() { el.textContent = Math.round(parseFloat(el.textContent) || 0); }
+        });
+      }
+    });
+  });
+
+  // HIW step cards — IntersectionObserver fade
+  (function(){
+    var cards = document.querySelectorAll('.gsap-step-card');
+    if (!cards.length) return;
+    var obs = new IntersectionObserver(function(entries) {
+      entries.forEach(function(e) {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+          e.target.classList.remove('dim');
+        } else {
+          var rect = e.target.getBoundingClientRect();
+          if (rect.bottom < 0) {
+            e.target.classList.remove('visible');
+            e.target.classList.add('dim');
+          }
+        }
+      });
+    }, { threshold: 0.3 });
+    cards.forEach(function(c) { obs.observe(c); });
+  })();
+
+  // Intersection Observer for scroll reveals (original, preserved)
+  var ro = new IntersectionObserver(function(entries) {
+    entries.forEach(function(e) {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        if (e.target.id === 'leadCounter') {
+          var el = e.target;
+          var target = 88;
+          var current = 0;
+          var step = Math.ceil(target / 30);
+          var iv = setInterval(function() {
+            current += step;
+            if (current >= target) { current = target; clearInterval(iv); }
+            el.textContent = current;
+          }, 40);
+        }
+        if (e.target.querySelector('.bar')) {
+          e.target.querySelectorAll('.bar').forEach(function(b) { b.style.animation = 'barGrow 1.2s cubic-bezier(0.16,1,0.3,1) forwards'; });
+        }
+      }
+    });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.reveal').forEach(function(el) { ro.observe(el); });
+  var counterEl = document.getElementById('leadCounter');
+  if (counterEl) ro.observe(counterEl);
+  var barChart = document.getElementById('barChart');
+  if (barChart) ro.observe(barChart);
+})();
+
+// ── Pipeline Typewriter ──
+(function(){
+  var box = document.querySelector('.pipeline-box');
+  if (!box) return;
+  var lines = [
+    '<span style="color:#4ade80;">●</span> Scraping Google for "Digital agencies in Berlin"...',
+    '<span style="color:#818cf8;">●</span> Found 47 leads · Deduplicating...',
+    '<span style="color:#818cf8;">●</span> Extracting websites &amp; emails',
+    '<span style="color:#fbbf24;">●</span> Scoring by relevance — 9/47 high match',
+    '<span style="color:#4ade80;">●</span> AI enrichment complete — generating emails',
+    '<span style="color:#a78bfa;">●</span> Sending personalized cold emails via SendGrid'
+  ];
+  var lineIdx = 0;
+  var charIdx = 0;
+  var isDeleting = false;
+  var cursor = box.querySelector('.cursor');
+
+  function type() {
+    var line = lines[lineIdx];
+    var cleanText = line.replace(/<[^>]*>/g, '');
+    if (!isDeleting) {
+      charIdx++;
+      box.innerHTML = line.substring(0, charIdx) + '<span class="cursor"></span>';
+      cursor = box.querySelector('.cursor');
+      if (charIdx >= line.length) {
+        isDeleting = true;
+        setTimeout(type, 2000);
+        return;
+      }
+      // Random realistic typing delay (30-100ms)
+      setTimeout(type, Math.random() * 70 + 30);
+    } else {
+      charIdx--;
+      box.innerHTML = line.substring(0, charIdx) + '<span class="cursor"></span>';
+      cursor = box.querySelector('.cursor');
+      if (charIdx <= 0) {
+        isDeleting = false;
+        lineIdx = (lineIdx + 1) % lines.length;
+        setTimeout(type, 400);
+        return;
+      }
+      setTimeout(type, 20);
+    }
+  }
+  // Start after a delay
+  setTimeout(type, 1000);
+})();
+
+// ── Magnetic Buttons ──
+(function(){
+  document.querySelectorAll('.magnetic-btn').forEach(function(btn) {
+    btn.addEventListener('mousemove', function(e) {
+      var rect = btn.getBoundingClientRect();
+      var x = (e.clientX - rect.left - rect.width / 2) * 0.15;
+      var y = (e.clientY - rect.top - rect.height / 2) * 0.15;
+      btn.style.transform = 'translate(' + x + 'px, ' + y + 'px)';
+    });
+    btn.addEventListener('mouseleave', function() {
+      btn.style.transform = '';
+    });
+  });
+})();
+
+// ── Pricing Card 3D Tilt ──
+(function(){
+  document.querySelectorAll('.gsap-pricing-card').forEach(function(card) {
+    card.addEventListener('mousemove', function(e) {
+      var rect = card.getBoundingClientRect();
+      var x = (e.clientX - rect.left) / rect.width - 0.5;
+      var y = (e.clientY - rect.top) / rect.height - 0.5;
+      card.style.transform = (card.dataset.featured === 'true' ? 'scale(1.05) ' : '') +
+        'perspective(800px) rotateY(' + (x * 5) + 'deg) rotateX(' + (-y * 5) + 'deg)';
+    });
+    card.addEventListener('mouseleave', function() {
+      card.style.transform = card.dataset.featured === 'true' ? 'scale(1.05)' : '';
+    });
+  });
+})();
+
+// ── Nav highlight on scroll (original, preserved) ──
+(function(){
+  var sections = document.querySelectorAll('section[id]');
+  var links = document.querySelectorAll('.nav-pill a[href^="#"]');
+  function update() {
+    var scrollY = window.scrollY + 200;
+    var current = '';
+    sections.forEach(function(s) {
+      if (s.offsetTop <= scrollY && s.offsetTop + s.offsetHeight > scrollY) current = s.id;
+    });
+    links.forEach(function(a) {
+      a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+    });
+  }
+  window.addEventListener('scroll', update);
+  update();
+})();
+</script>
+</body>
+</html>

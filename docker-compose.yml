@@ -1,0 +1,82 @@
+version: "3.9"
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: leadgen
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      POSTGRES_DB: leadgen
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U leadgen"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  web:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://leadgen:${DB_PASSWORD:?}@db:5432/leadgen
+      API_KEY: ${API_KEY:-}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      STRIPE_API_KEY: ${STRIPE_API_KEY:-}
+      STRIPE_PRICE_ID: ${STRIPE_PRICE_ID:-price_99_month}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
+      FROM_EMAIL: ${FROM_EMAIL:-noreply@leadgen.app}
+      FROM_NAME: ${FROM_NAME:-LeadGen Agent}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+    command: >
+      sh -c "alembic upgrade head && uvicorn src.web:app --host 0.0.0.0 --port 8000"
+  agent:
+    build: .
+    restart: "no"
+    profiles: ["manual"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://leadgen:${DB_PASSWORD:?}@db:5432/leadgen
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      STRIPE_API_KEY: ${STRIPE_API_KEY:-}
+      STRIPE_PRICE_ID: ${STRIPE_PRICE_ID:-price_99_month}
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
+      FROM_EMAIL: ${FROM_EMAIL:-noreply@leadgen.app}
+      FROM_NAME: ${FROM_NAME:-LeadGen Agent}
+    command: python -m src.cli
+
+  backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    volumes:
+      - ./scripts/backup.sh:/usr/local/bin/backup.sh:ro
+      - backups:/backups
+    environment:
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_USER: leadgen
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      DB_NAME: leadgen
+      BACKUP_DIR: /backups
+    command: >
+      sh -c "
+        apk add --no-cache dcron >/dev/null 2>&1 &&
+        echo '0 3 * * * /usr/local/bin/backup.sh >> /var/log/backup.log 2>&1' | crontab - &&
+        crond -b -l 0 &&
+        echo '[backup] Cron daemon started — daily backup at 03:00 UTC' &&
+        tail -f /dev/null
+      "
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  backups:
