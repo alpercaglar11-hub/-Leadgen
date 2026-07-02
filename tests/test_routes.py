@@ -119,7 +119,7 @@ class TestAuthGuardOff:
     def test_get_stats(self, client):
         resp = client.get("/api/stats")
         assert resp.status_code == 200
-        assert "total_leads" in resp.json()
+        assert "qualified_companies" in resp.json()
 
     def test_get_subscription(self, client):
         resp = client.get("/api/subscription")

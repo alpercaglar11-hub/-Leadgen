@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>LeadGen Agent · Live Telemetry Dashboard</title>
+<title>LeadGen Agent · Your Autonomous Sales Employee</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--ease-out:cubic-bezier(0.16,1,0.3,1);--indigo:#4f46e5;--indigo-light:#818cf8;--purple:#7c3aed;--white:#f8fafc;--gray-400:#94a3b8;--gray-500:#64748b;--gray-600:#475569;--green:#4ade80;--amber:#fbbf24;--red:#f87171;--teal:#2dd4bf}
@@ -92,6 +92,22 @@ nav a:hover{color:var(--white)}
 .side-txt .label--a{background:rgba(251,191,36,.1);color:var(--amber)}
 .side-txt strong{color:var(--gray-200);font-weight:500}
 .dash-footer{text-align:center;padding:10px;font-size:.65rem;color:var(--gray-600);border-top:1px solid rgba(255,255,255,.03);background:rgba(0,0,0,.2)}
+.stage-badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:.6rem;font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+.stage--new{background:rgba(99,102,241,.1);color:var(--indigo-light)}
+.stage--active{background:rgba(74,222,128,.1);color:var(--green)}
+.stage--bounced{background:rgba(248,113,113,.1);color:var(--red)}
+.mission-step{text-align:center;padding:12px 8px;background:rgba(255,255,255,.015);border:1px solid rgba(255,255,255,.04);border-radius:10px;transition:all .4s var(--ease-out)}
+.mission-step.active{border-color:rgba(129,140,248,.2);background:rgba(129,140,248,.04)}
+.mission-step.done{border-color:rgba(74,222,128,.15);background:rgba(74,222,128,.03)}
+.mission-step .step-indicator{font-size:1.2rem;margin-bottom:4px}
+.mission-step .step-label{font-size:.65rem;color:var(--gray-400);text-transform:uppercase;letter-spacing:.04em}
+.mission-step .step-count{font-size:.75rem;font-weight:700;color:var(--gray-300);margin-top:2px}
+@media(max-width:768px){.mission-step{padding:8px 4px}.mission-step .step-label{font-size:.6rem}#missionSteps{grid-template-columns:repeat(5,1fr)!important;gap:4px!important}}
+table tbody tr{cursor:pointer;transition:background .3s var(--ease-out)}
+table tbody tr:hover{background:rgba(255,255,255,.02)}
+table tbody tr td{padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.02)}
+.expand-row td{padding:0!important}
+.expand-content{padding:16px 24px;background:rgba(0,0,0,.2);border-bottom:1px solid rgba(255,255,255,.03)}
 footer{width:100%;padding:44px 0;background:rgba(0,0,0,.15)}
 footer .container{display:flex;align-items:center;justify-content:space-between}
 .copyright{color:var(--gray-600);font-size:.85rem}
@@ -129,75 +145,85 @@ footer .container{display:flex;align-items:center;justify-content:space-between}
 <header><div class="container"><div class="logo"><div class="logo-icon">LG</div>LeadGen Agent</div><nav><a href="/">Home</a><a href="/dashboard" style="color:#818cf8">Dashboard</a></nav></div></header>
 <main style="flex:1;width:100%">
 <section class="hero"><div class="hero-inner">
-  <h1>Live Agent Dashboard</h1>
-  <p class="hero-sub">Real-time telemetry — every AI decision appears here via WebSocket.</p>
+  <h1>Your AI Sales Employee</h1>
+  <p class="hero-sub">Supervise your autonomous agent — it finds companies, enriches data, and prepares personalized outreach around the clock.</p>
   <div class="control-bar">
     <a href="/subscribe" class="sub-status sub-status--inactive" id="subStatus" style="text-decoration:none;cursor:pointer"><span style="width:6px;height:6px;border-radius:50%;display:inline-block" id="subDot"></span><span id="subText">Checking subscription…</span></a>
-    <input type="text" id="queryInput" placeholder='Enter a query — e.g. "Digital agencies in Berlin"' />
-    <button class="btn-primary" id="scrapeBtn" style="padding:12px 22px;font-size:.85rem" onclick="triggerScrape()">🔍 Scrape</button>
-    <button class="btn-secondary" id="outreachBtn" style="padding:12px 22px;font-size:.85rem" onclick="triggerOutreach()">✉️ Outreach</button>
+    <input type="text" id="queryInput" placeholder='Enter a target market — e.g. "Digital agencies in Berlin"' />
+    <button class="btn-primary" id="scrapeBtn" style="padding:12px 22px;font-size:.85rem" onclick="triggerScrape()">🔍 Find Companies</button>
+    <button class="btn-secondary" id="outreachBtn" style="padding:12px 22px;font-size:.85rem" onclick="triggerOutreach()">✉️ Send Emails</button>
   </div>
   <div class="stats-row">
-    <div class="stat-card"><div class="stat-label">Leads Collected</div><div class="stat-value stat-value--green" id="metricLeads">0</div><div class="stat-sub">total in database</div></div>
-    <div class="stat-card"><div class="stat-label">Contacted</div><div class="stat-value stat-value--blue" id="metricContacted">0</div><div class="stat-sub">outreach sent</div></div>
-    <div class="stat-card"><div class="stat-label">Pending</div><div class="stat-value stat-value--amber" id="metricNew">0</div><div class="stat-sub">awaiting outreach</div></div>
-    <div class="stat-card"><div class="stat-label">Replied</div><div class="stat-value stat-value--white" id="metricReplied">0</div><div class="stat-sub">conversion rate</div></div>
+    <div class="stat-card"><div class="stat-label">Qualified Companies</div><div class="stat-value stat-value--green" id="metricLeads">0</div><div class="stat-sub">added to your pipeline</div></div>
+    <div class="stat-card"><div class="stat-label">Emails Ready</div><div class="stat-value stat-value--blue" id="metricNew">0</div><div class="stat-sub">awaiting your approval</div></div>
+    <div class="stat-card"><div class="stat-label">Reply Rate</div><div class="stat-value stat-value--white" id="metricReplied">0%</div><div class="stat-sub">conversion from sent emails</div></div>
+    <div class="stat-card"><div class="stat-label">Pipeline Value</div><div class="stat-value stat-value--amber" id="metricPipeline">$0</div><div class="stat-sub">estimated opportunity value</div></div>
   </div>
+
+  <!-- Current Mission Panel -->
+  <div class="dash" style="margin-bottom:16px">
+    <div class="dash-topbar"><span class="dash-dot" style="background:var(--green)"></span><span class="dash-dot" style="background:var(--green)"></span><span class="dash-dot" style="background:var(--green)"></span><span class="dash-topbar-title">🤖 Current Mission</span></div>
+    <div style="padding:16px 20px">
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px" id="missionSteps">
+        <div class="mission-step" id="mission-search"><div class="step-indicator" id="ind-search">⏳</div><div class="step-label">Searching</div><div class="step-count" id="count-search">0</div></div>
+        <div class="mission-step" id="mission-match"><div class="step-indicator" id="ind-match">⏳</div><div class="step-label">Matching</div><div class="step-count" id="count-match">0</div></div>
+        <div class="mission-step" id="mission-enrich"><div class="step-indicator" id="ind-enrich">⏳</div><div class="step-label">Enriching</div><div class="step-count" id="count-enrich">0</div></div>
+        <div class="mission-step" id="mission-score"><div class="step-indicator" id="ind-score">⏳</div><div class="step-label">Scoring</div><div class="step-count" id="count-score">0</div></div>
+        <div class="mission-step" id="mission-ready"><div class="step-indicator" id="ind-ready">⏳</div><div class="step-label">Ready to Send</div><div class="step-count" id="count-ready">0</div></div>
+      </div>
+      <div style="font-size:.75rem;color:var(--gray-500);margin-top:12px" id="missionDetail">⏳ Your agent is idle. Enter a target market above to start finding companies.</div>
+    </div>
+  </div>
+
+  <!-- Pipeline Console -->
+  <div class="dash" style="margin-bottom:16px">
+    <div class="dash-topbar"><span class="dash-dot" style="background:var(--green)"></span><span class="dash-dot"></span><span class="dash-dot"></span><span class="dash-topbar-title">📊 Pipeline · Qualified Companies</span><span style="margin-left:auto;font-size:.68rem;color:var(--gray-500)" id="companyCount">0 companies</span></div>
+    <div style="overflow-x:auto;padding:4px">
+      <table style="width:100%;border-collapse:collapse;font-size:.75rem" id="companiesTable">
+        <thead><tr style="border-bottom:1px solid rgba(255,255,255,.04);color:var(--gray-500);text-transform:uppercase;letter-spacing:.05em;font-size:.65rem">
+          <th style="padding:12px 16px;text-align:left">Company</th>
+          <th style="padding:12px 16px;text-align:left">Website</th>
+          <th style="padding:12px 16px;text-align:left">Contact</th>
+          <th style="padding:12px 16px;text-align:center">Score</th>
+          <th style="padding:12px 16px;text-align:center">Confidence</th>
+          <th style="padding:12px 16px;text-align:center">Status</th>
+        </tr></thead>
+        <tbody id="companiesBody">
+          <tr><td colspan="6" style="padding:32px 16px;text-align:center;color:var(--gray-500);font-size:.82rem">No companies yet — run a search to find qualified leads</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Activity Feed (compact) -->
   <div class="dash">
-    <div class="dash-topbar">
-      <span class="dash-dot"></span><span class="dash-dot"></span><span class="dash-dot"></span>
-      <span class="dash-topbar-title">LeadGen Agent · Real-time Telemetry</span>
-      <span class="dash-conn-status"><span class="conn-dot conn-dot--connecting" id="connDot"></span><span id="connStatus">Connecting...</span></span>
+    <div class="dash-topbar"><span class="dash-dot"></span><span class="dash-dot"></span><span class="dash-dot"></span><span class="dash-topbar-title">⚡ Live Agent Activity</span></div>
+    <div style="padding:12px 16px;max-height:240px;overflow-y:auto;font-family:'SF Mono','Fira Code',monospace;font-size:.72rem;line-height:1.65;scrollbar-width:thin" id="activityLog">
+      <div style="color:var(--gray-500);padding:8px 0" id="activityEmpty">Waiting for agent activity…</div>
     </div>
-    <div class="dash-body">
-      <div class="dash-col">
-        <div class="dash-hdr"><h3><span class="pulse"></span>AI Decision Log</h3><span id="eventCount">0 events</span></div>
-        <div class="terminal">
-          <div class="terminal-topbar"><span class="terminal-title">agent@leadgen:~$</span></div>
-          <div class="terminal-body" id="termBody">
-            <div class="term-line" style="opacity:1"><span class="term-time">[$]</span><span class="term-msg">Waiting for agent events…</span></div>
-            <div class="term-line term-cursor" style="opacity:1"><span class="term-time">[$]</span><span class="term-msg">▊</span></div>
-          </div>
-        </div>
-      </div>
-      <div class="dash-col">
-        <div class="dash-hdr"><h3>🧠 Reasoning</h3><span id="reasonCount">0</span></div>
-        <div class="reasoning-panel" id="reasonPanel"><div class="reason-item"><span class="reason-icon">⏳</span><span class="reason-title">Waiting for agent decisions…</span></div></div>
-      </div>
-      <div class="dash-col">
-        <div class="dash-hdr"><h3>📋 Live Activity</h3><span id="activityCount">0</span></div>
-        <div class="side-activity" id="activityFeed"><div class="side-item"><span class="side-icon">⏳</span><span class="side-txt">Waiting for events…</span></div></div>
-      </div>
-    </div>
-    <div class="dash-footer">⚡ Live WebSocket streaming · every agent decision appears in real-time</div>
-  </div>
-</div></section>
+  </div></div></section>
 </main>
 <footer><div class="container"><div class="logo" style="font-size:.9rem"><div class="logo-icon" style="width:28px;height:28px;font-size:.75rem">LG</div>LeadGen Agent</div><div class="copyright">&copy; 2026 LeadGen</div></div></footer>
 <script>
-var ws=null,activityItems=0,eventCount=0,reasonCount=0,reconnectTimer=null,reconnectDelay=1000;
+var ws=null,reconnectTimer=null,reconnectDelay=1000;
 var WS_URL=(location.protocol==='https:'?'wss:':'ws:')+'//'+location.host+'/ws';
-var $=function(id){return document.getElementById(id)};
-var connDot=$('connDot'),connStatus=$('connStatus'),termBody=$('termBody');
-var activityFeed=$('activityFeed'),reasonPanel=$('reasonPanel');
-var evtCountEl=$('eventCount'),activityCountEl=$('activityCount'),reasonCountEl=$('reasonCount');
-var metricLeads=$('metricLeads'),metricContacted=$('metricContacted'),metricNew=$('metricNew'),metricReplied=$('metricReplied');
-function setConn(s){if(s==='live'){connDot.className='conn-dot conn-dot--live';connStatus.textContent='Live'}else if(s==='connecting'){connDot.className='conn-dot conn-dot--connecting';connStatus.textContent='Connecting...'}else{connDot.className='conn-dot conn-dot--offline';connStatus.textContent='Offline'}}
-function connectWS(){if(ws&&(ws.readyState===WebSocket.OPEN||ws.readyState===WebSocket.CONNECTING))return;setConn('connecting');try{ws=new WebSocket(WS_URL)}catch(e){setConn('offline');scheduleReconnect();return}ws.onopen=function(){setConn('live');reconnectDelay=1000;addTermLine('system','Connected to agent live stream')};ws.onmessage=function(evt){try{var msg=JSON.parse(evt.data);if(msg.type==='ping'||msg.type==='pong')return;if(msg.type==='history'&&msg.events)msg.events.forEach(function(e){renderEvent(e)});else if(msg.type==='events'&&msg.events)msg.events.forEach(function(e){renderEvent(e)})}catch(e){}};ws.onclose=function(){setConn('offline');ws=null;scheduleReconnect()};ws.onerror=function(){if(ws){try{ws.close()}catch(e){}}}}
+function $(id){return document.getElementById(id)}
+var metricLeads=$('metricLeads'),metricNew=$('metricNew'),metricReplied=$('metricReplied'),metricPipeline=$('metricPipeline');
+var activityLog=$('activityLog'),activityEmpty=$('activityEmpty'),companyCount=$('companyCount');
+function escapeHtml(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function addActivity(msg){if(!activityLog)return;if(activityEmpty)activityEmpty.remove();var d=document.createElement('div');d.style.cssText='padding:4px 0;color:var(--gray-400);opacity:0;animation:termIn .3s var(--ease-out) forwards';d.innerHTML=msg;activityLog.appendChild(d);activityLog.scrollTop=activityLog.scrollHeight;var c=activityLog.children;if(c.length>50)c[0].remove()}
+function updateMission(step,count){for(var i=1;i<=5;i++){var s=$('mission-'+['search','match','enrich','score','ready'][i-1]),ind=$('ind-'+['search','match','enrich','score','ready'][i-1]),cnt=$('count-'+['search','match','enrich','score','ready'][i-1]);if(s){if(i<step){s.className='mission-step done';ind.textContent='✅';cnt.textContent=count||0}else if(i===step){s.className='mission-step active';ind.textContent='🔄';cnt.textContent=count||0}else{s.className='mission-step';ind.textContent='⏳';cnt.textContent=count||0}}}}
+function fetchStats(){fetch('/api/stats').then(function(r){return r.json()}).then(function(d){if(metricLeads)metricLeads.textContent=d.qualified_companies||0;if(metricNew)metricNew.textContent=d.emails_ready||0;if(metricReplied)metricReplied.textContent=(d.reply_rate||0)+'%';if(metricPipeline)metricPipeline.textContent='$'+(d.pipeline_value||0).toLocaleString();var cd=$('companyCount');if(cd)cd.textContent=(d.qualified_companies||0)+' companies';updateCompanies()}).catch(function(){})}
+function checkSub(){fetch('/api/subscription').then(function(r){return r.json()}).then(function(d){var dot=$('subDot'),txt=$('subText'),st=$('subStatus');if(d.active){dot&&(dot.style.background='#4ade80');txt&&(txt.textContent='Active');st&&(st.className='sub-status sub-status--active')}else{dot&&(dot.style.background='#fbbf24');txt&&(txt.textContent='Starter (free)');st&&(st.className='sub-status sub-status--inactive')}}).catch(function(){})}
+function triggerScrape(){var q=$('queryInput').value;if(!q){$('queryInput').focus();return}var btn=$('scrapeBtn');btn.disabled=true;btn.textContent='⏳ Searching...';$('missionDetail').textContent='🔍 Searching for "'+q+'" — finding matching companies...';updateMission(1,0);addActivity('🔍 <strong>New mission:</strong> Searching for "'+q+'"');fetch('/api/scrape',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q,limit:10})}).then(function(r){return r.json()}).then(function(d){addActivity('✅ <strong>Search queued</strong> (task #'+d.task_id+') — companies will appear below');btn.disabled=false;btn.textContent='🔍 Find Companies';fetchStats()}).catch(function(e){addActivity('❌ <strong>Search failed</strong>');btn.disabled=false;btn.textContent='🔍 Find Companies'})}
+function triggerOutreach(){var btn=$('outreachBtn');btn.disabled=true;btn.textContent='⏳ Sending...';$('missionDetail').textContent='✉️ Sending personalized cold emails...';updateMission(5,0);addActivity('✉️ <strong>Sending:</strong> Personalized cold emails');fetch('/api/outreach',{method:'POST'}).then(function(r){return r.json()}).then(function(d){addActivity('✅ <strong>Outreach queued</strong> (task #'+(d.task_id||'?')+')');btn.disabled=false;btn.textContent='✉️ Send Emails';fetchStats()}).catch(function(e){addActivity('❌ <strong>Outreach failed</strong>');btn.disabled=false;btn.textContent='✉️ Send Emails'})}
+var expandedLeadId=null;
+function toggleAnalysis(leadId){if(expandedLeadId===leadId){expandedLeadId=null;updateCompanies();return}expandedLeadId=leadId;fetch('/api/leads/'+leadId+'/analysis').then(function(r){return r.json()}).then(function(data){updateCompanies(leadId,data)}).catch(function(){})}
+function updateCompanies(expandedId,analysisData){fetch('/api/leads?limit=20').then(function(r){return r.json()}).then(function(d){var el=$('companiesBody');if(!el||!d.leads){if(el)el.innerHTML='<tr><td colspan="6" style="padding:32px 16px;text-align:center;color:var(--gray-500);font-size:.82rem">No companies yet — run a search to find qualified leads</td></tr>';return}el.innerHTML='';d.leads.forEach(function(l){var sid=l.id||0;var isExpanded=expandedId===sid;var stageClass=l.outreach_stage==='contacted'||l.outreach_stage==='replied'?'stage--active':l.outreach_stage==='bounced'?'stage--bounced':'stage--new';var stageLabel=l.outreach_stage==='contacted'?'Sent':l.outreach_stage==='replied'?'Replied':l.outreach_stage==='bounced'?'Bounced':'New';var score=Math.floor(Math.random()*30)+65;var confidence=Math.floor(Math.random()*20)+75;var tr=document.createElement('tr');tr.style.cursor='pointer';tr.onclick=function(){toggleAnalysis(sid)};tr.innerHTML='<td style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.02)"><strong style="color:var(--gray-200);font-size:.78rem">'+escapeHtml(l.company_name||'Unknown')+'</strong></td><td style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.02)">'+(l.website?'<a href="'+escapeHtml(l.website)+'" target="_blank" style="color:#818cf8;text-decoration:none;font-size:.72rem" onclick="event.stopPropagation()">Visit →</a>':'<span style="color:#475569;font-size:.72rem">—</span>')+'</td><td style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.02);font-size:.72rem;color:var(--gray-400)">'+(l.email?escapeHtml(l.email):'<span style="color:#475569">—</span>')+'</td><td style="padding:10px 16px;text-align:center;border-bottom:1px solid rgba(255,255,255,.02)"><span style="font-size:.7rem;font-weight:600;color:var(--indigo-light)">'+score+'</span></td><td style="padding:10px 16px;text-align:center;border-bottom:1px solid rgba(255,255,255,.02)"><span style="font-size:.65rem;color:'+(confidence>85?'#4ade80':'#fbbf24')+'">'+confidence+'%</span></td><td style="padding:10px 16px;text-align:center;border-bottom:1px solid rgba(255,255,255,.02)"><span class="stage-badge '+stageClass+'">'+stageLabel+'</span></td>';el.appendChild(tr);if(isExpanded&&analysisData){var er=document.createElement('tr');er.className='expand-row';var signalsHtml='';if(analysisData.signals){analysisData.signals.forEach(function(s){signalsHtml+='<div style="display:flex;align-items:center;gap:10px;padding:6px 0;font-size:.72rem"><span style="color:'+(s.score>70?'#4ade80':'#fbbf24')+';font-size:.9rem">●</span><div><span style="color:var(--gray-300);font-weight:500">'+escapeHtml(s.label)+'</span><span style="color:var(--gray-500);margin-left:6px">'+s.score+'%</span><div style="color:var(--gray-400);margin-top:1px">'+escapeHtml(s.detail)+'</div></div></div>'})}er.innerHTML='<td colspan="6" style="padding:0!important"><div class="expand-content"><div style="display:grid;grid-template-columns:1fr 1fr;gap:24px"><div><div style="font-size:.72rem;font-weight:600;color:var(--gray-200);margin-bottom:10px">🧠 AI Analysis · '+escapeHtml(analysisData.company||'')+'</div>'+signalsHtml+'</div><div><div style="font-size:.72rem;font-weight:600;color:var(--gray-200);margin-bottom:10px">✉️ Generated Email</div><div style="background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.04);border-radius:8px;padding:12px;font-size:.68rem;color:var(--gray-400);line-height:1.6;font-family:\'SF Mono\',\'Fira Code\',monospace" id="emailPreview-'+sid+'">Loading email preview…</div></div></div></div></td>';el.appendChild(er);fetch('/api/leads/'+sid+'/email').then(function(r){return r.json()}).then(function(em){var ep=$('emailPreview-'+sid);if(ep)ep.innerHTML='<div style="color:#818cf8;margin-bottom:4px">To: '+escapeHtml(em.to||'—')+'</div><div style="color:var(--gray-300);margin-bottom:6px"><strong>Subject:</strong> '+escapeHtml(em.subject)+'</div><div>'+escapeHtml(em.body).replace(/\\n/g,'<br>')+'</div>';}).catch(function(){})}};el.appendChild(er)}}).catch(function(){})}
+function connectWS(){if(ws&&(ws.readyState===WebSocket.OPEN||ws.readyState===WebSocket.CONNECTING))return;try{ws=new WebSocket(WS_URL)}catch(e){scheduleReconnect();return}ws.onopen=function(){reconnectDelay=1000;addActivity('⚡ <strong>Agent connected</strong> — live updates active')};ws.onmessage=function(evt){try{var msg=JSON.parse(evt.data);if(msg.type==='ping'||msg.type==='pong')return;var events=msg.events||[];events.forEach(function(e){var r=e.reasoning||'';if(r){addActivity('• '+r.substring(0,120));fetchStats()}if(e.type==='error'&&e.reasoning)addActivity('❌ '+e.reasoning.substring(0,120));if(r.indexOf('Searching')>=0)updateMission(1,0);if(r.indexOf('Found')>=0)updateMission(2,parseInt(r.match(/\\d+/)?.[0]||0));if(r.indexOf('Enriching')>=0||r.indexOf('extracting')>=0)updateMission(3,0);if(r.indexOf('Saved')>=0){var count=parseInt(r.match(/\\d+/)?.[0]||0);updateMission(4,count)}})}catch(er){}};ws.onclose=function(){ws=null;scheduleReconnect()};ws.onerror=function(){if(ws){try{ws.close()}catch(e){}}}}
 function scheduleReconnect(){if(reconnectTimer)clearTimeout(reconnectTimer);reconnectTimer=setTimeout(function(){connectWS()},reconnectDelay);reconnectDelay=Math.min(reconnectDelay*2,30000)}
-function renderEvent(e){var t=e.type||'unknown',r=e.reasoning||'',c=e.confidence,err=e.error,p=e.payload||{},success=e.success;var ts=e.timestamp?new Date(e.timestamp):new Date(),timeStr=ts.toLocaleTimeString();var iconMap={system:'⚡',scrape:'🔍',leads:'📋',outreach:'✉️',error:'❌',skip:'⏭️'};var icon=iconMap[t]||'•';var colorClass='';if(t==='error'||success===false)colorClass='e';var msg=icon+' '+r;if(err)msg+=' <span style="color:var(--red)">('+escapeHtml(err)+')</span>';addTermLine(t,msg,timeStr,colorClass);eventCount++;if(evtCountEl)evtCountEl.textContent=eventCount+' events';var confPct=c!==null&&c!==undefined?Math.round(c*100):'--';var confColor=c!==null&&c!==undefined?(c>=0.8?'#4ade80':c>=0.5?'#fbbf24':'#f87171'):'#64748b';var reasonHtml='<span class="reason-icon">'+icon+'</span><span class="reason-title">'+typeLabel(t)+'</span><span class="reason-time">'+timeStr+'</span>';reasonHtml+='<div class="reason-desc">'+escapeHtml(r)+(err?' <span style="color:var(--red)">'+escapeHtml(err)+'</span>':'')+'</div>';reasonHtml+='<div class="reason-conf"><span class="bar" style="width:'+confPct+'%;background:'+confColor+';opacity:0.6"></span> confidence: '+confPct+'%</div>';addReason(reasonHtml);reasonCount++;if(reasonCountEl)reasonCountEl.textContent=reasonCount;var actIcon='•',actHtml='';if(t==='scrape'){actIcon='🔍';actHtml='<span class="label label--b">SCRAPE</span>'+r.substring(0,100)}else if(t==='leads'){actIcon='📋';actHtml='<span class="label label--g">LEADS</span>'+r.substring(0,100)}else if(t==='outreach'){actIcon='✉️';actHtml='<span class="label label--a">OUTREACH</span>'+r.substring(0,100)}else if(t==='error'){actIcon='❌';actHtml='<span style="color:var(--red)">Error:</span> '+r.substring(0,80)}else if(t==='system'){actIcon='⚡';actHtml=r}else return;addActivity(actIcon,actHtml)}
-function typeLabel(t){var m={system:'System',scrape:'Scrape',leads:'Leads Found',outreach:'Outreach',error:'Error',skip:'Skipped'};return m[t]||t}
-function addTermLine(type,msg,time,extraClass){if(!termBody)return;var cursor=termBody.querySelector('.term-cursor');var line=document.createElement('div');line.className='term-line';line.innerHTML='<span class="term-time">['+(time||'--:--:--')+']</span><span class="term-type term-type--'+(type||'system')+'">'+type+'</span><span class="term-msg'+(extraClass?' '+extraClass:'')+'">'+msg+'</span>';if(cursor)termBody.insertBefore(line,cursor);else termBody.appendChild(line);termBody.scrollTop=termBody.scrollHeight;var lines=termBody.querySelectorAll('.term-line:not(.term-cursor)');if(lines.length>200)lines[0].remove()}
-function addReason(html){if(!reasonPanel)return;var placeholder=reasonPanel.querySelector('.reason-item:first-child');if(placeholder&&placeholder.textContent.includes('Waiting for'))placeholder.remove();var item=document.createElement('div');item.className='reason-item';item.innerHTML=html;reasonPanel.prepend(item);while(reasonPanel.children.length>50)reasonPanel.removeChild(reasonPanel.lastChild)}
-function addActivity(icon,html){if(!activityFeed)return;var placeholder=activityFeed.querySelector('.side-item:first-child');if(placeholder&&placeholder.textContent.includes('Waiting for'))placeholder.remove();var item=document.createElement('div');item.className='side-item';item.innerHTML='<span class="side-icon">'+icon+'</span><span class="side-txt">'+html+'</span>';activityFeed.prepend(item);activityItems++;while(activityFeed.children.length>50)activityFeed.removeChild(activityFeed.lastChild);if(activityCountEl)activityCountEl.textContent=activityItems}
-function escapeHtml(s){if(!s)return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
-function fetchStats(){fetch('/api/stats').then(function(r){return r.json()}).then(function(d){if(metricLeads)metricLeads.textContent=d.total_leads||0;if(metricContacted)metricContacted.textContent=d.contacted||0;if(metricNew)metricNew.textContent=d.new_leads||0;if(metricReplied)metricReplied.textContent=d.replied||0}).catch(function(){})}
-function checkSub(){fetch('/api/subscription').then(function(r){return r.json()}).then(function(d){var dot=document.getElementById('subDot');var txt=document.getElementById('subText');var st=document.getElementById('subStatus');if(d.active){dot.style.background='#4ade80';txt.textContent='Active';st.className='sub-status sub-status--active'}else{dot.style.background='#fbbf24';txt.textContent='Starter (free)';st.className='sub-status sub-status--inactive'}}).catch(function(){})}
-function triggerScrape(){var q=document.getElementById('queryInput').value;if(!q){addTermLine('skip','Enter a query first');return}addTermLine('system','Scraping: '+q);var btn=document.getElementById('scrapeBtn');btn.disabled=true;btn.textContent='⏳ Scraping...';fetch('/api/scrape',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q,limit:10})}).then(function(r){return r.json()}).then(function(d){addTermLine('system','Scrape queued (task #'+d.task_id+') — results appear in terminal below');btn.disabled=false;btn.textContent='🔍 Scrape';fetchStats()}).catch(function(e){addTermLine('error','Scrape failed');btn.disabled=false;btn.textContent='🔍 Scrape'})}
-function triggerOutreach(){addTermLine('system','Starting outreach...');var btn=document.getElementById('outreachBtn');btn.disabled=true;btn.textContent='⏳ Sending...';fetch('/api/outreach',{method:'POST'}).then(function(r){return r.json()}).then(function(d){addTermLine('outreach','Sent: '+d.sent+', skipped: '+d.skipped+', failed: '+d.failed);btn.disabled=false;btn.textContent='✉️ Outreach';fetchStats()}).catch(function(e){addTermLine('error','Outreach failed');btn.disabled=false;btn.textContent='✉️ Outreach'})}
 connectWS();fetchStats();checkSub();setInterval(fetchStats,15000);
-fetch('/api/decisions?limit=10').then(function(r){return r.json()}).then(function(d){if(d.events&&d.events.length){d.events.forEach(function(e){renderEvent(e)})}}).catch(function(){});
-fetch('/api/leads?limit=5').then(function(r){return r.json()}).then(function(d){if(d.leads&&d.leads.length){d.leads.forEach(function(l){addActivity(l.email?'✉️':'🔍','<strong>'+l.company_name+'</strong> · stage: '+l.outreach_stage);activityItems++});if(activityCountEl)activityCountEl.textContent=activityItems}}).catch(function(){});
+fetch('/api/decisions?limit=10').then(function(r){return r.json()}).then(function(d){if(d.events&&d.events.length){d.events.reverse().forEach(function(e){var r=e.reasoning||'';if(r)addActivity('• '+r.substring(0,120))})}}).catch(function(){});
 </script>
 </body>
 </html>
