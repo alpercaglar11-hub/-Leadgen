@@ -274,7 +274,7 @@ async def api_stats(request: Request) -> dict:
 # ── Landing page (React SPA build) ──────────────────────────────────────────
 
 LANDING_PAGE_PATH = os.path.join(
-    os.path.dirname(__file__), "..", "frontend", "dist", "index.html"
+    os.path.dirname(__file__), "..", "landing", "index.html"
 )
 FRONTEND_ASSETS = os.path.join(
     os.path.dirname(__file__), "..", "frontend", "dist", "assets"
@@ -291,6 +291,12 @@ DASHBOARD_PAGE_PATH = os.path.join(
 )
 ONBOARDING_PAGE_PATH = os.path.join(
     os.path.dirname(__file__), "..", "landing", "onboarding.html"
+)
+ROBOTS_TXT_PATH = os.path.join(
+    os.path.dirname(__file__), "..", "landing", "robots.txt"
+)
+SITEMAP_XML_PATH = os.path.join(
+    os.path.dirname(__file__), "..", "landing", "sitemap.xml"
 )
 
 
@@ -312,6 +318,24 @@ async def favicon() -> str:
         with open(FAVICON_PATH) as f:
             svg = f.read()
         return HTMLResponse(svg, media_type="image/svg+xml")
+    except FileNotFoundError:
+        raise HTTPException(status_code=404)
+
+
+@app.get("/robots.txt", response_class=HTMLResponse)
+async def robots_txt() -> str:
+    try:
+        with open(ROBOTS_TXT_PATH) as f:
+            return f.read()
+    except FileNotFoundError:
+        raise HTTPException(status_code=404)
+
+
+@app.get("/sitemap.xml", response_class=HTMLResponse)
+async def sitemap_xml() -> str:
+    try:
+        with open(SITEMAP_XML_PATH) as f:
+            return f.read()
     except FileNotFoundError:
         raise HTTPException(status_code=404)
 
