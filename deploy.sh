@@ -16,7 +16,7 @@
 set -euo pipefail
 
 DOMAIN="${1:?Usage: sudo $0 <your-domain.com>}"
-REPO_URL="${REPO_URL:-https://github.com/your-org/leadgen-agent.git}"
+REPO_URL="${REPO_URL:-https://github.com/alpercaglar11-hub/-Leadgen.git}"
 BRANCH="${BRANCH:-main}"
 APP_DIR="/opt/leadgen-agent"
 ENV_FILE="/root/leadgen-agent.env"
