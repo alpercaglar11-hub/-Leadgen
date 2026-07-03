@@ -68,6 +68,13 @@ input[type="text"]::placeholder{color:var(--gray-600)}
 </div>
 
 <script>
+// Auth: read token from URL query param, persist in session
+var __token = (function(){var p=new URLSearchParams(window.location.search),t=p.get('token');if(t){sessionStorage.setItem('api_token',t);document.cookie='token='+t+';path=/;max-age=86400';return t}return sessionStorage.getItem('api_token')||''})();
+function __authH(){return __token?{'Authorization':'Bearer '+__token,'Content-Type':'application/json'}:{'Content-Type':'application/json'}}
+
+// Append auth token to the "Go to Dashboard" link so it survives navigation
+(function(){var el=document.querySelector('a[href=\"/dashboard\"]');if(el&&__token)el.href='/dashboard?token='+encodeURIComponent(__token)})();
+
 // Check if demo mode
 var isDemoMode = window.location.search.indexOf('demo=true') !== -1;
 if (isDemoMode) {
@@ -94,11 +101,12 @@ function animateSteps(savedCount) {
   setTimeout(function() {
     var sub = document.getElementById('statusSub');
     if (isDemoMode) {
-      sub.innerHTML = '🎯 Demo complete! <a href="/dashboard" style="color:#818cf8;text-decoration:none">Go to Dashboard →</a>';
+      sub.innerHTML = '🎯 Demo complete! Redirecting to dashboard…';
     } else {
-      sub.innerHTML = '🎯 Leads found! <a href="/dashboard" style="color:#818cf8;text-decoration:none">Go to Dashboard →</a>';
+      sub.innerHTML = '🎯 Leads found! Redirecting to dashboard…';
     }
-  }, 4500);
+  setTimeout(function() { window.location.href = '/dashboard'; }, 1500);
+	  }, 4500);
 }
 
 function startSearch() {
@@ -112,7 +120,7 @@ function startSearch() {
   // Fire and forget the API request — show real result count if available
   fetch('/api/scrape', {
     method: 'POST',
-    headers: {'Content-Type': 'application/json'},
+    headers: __authH(),
     body: JSON.stringify({query: q, limit: 15})
   }).then(function(r) {
     return r.json();

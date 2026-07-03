@@ -63,7 +63,11 @@ def _require_dashboard(request: Request) -> None:
     """Protect HTML pages when API_KEY is set."""
     if not settings.api_key:
         return
-    token = request.headers.get("Authorization", "") or request.cookies.get("token", "")
+    token = (
+        request.headers.get("Authorization", "")
+        or request.cookies.get("token", "")
+        or request.query_params.get("token", "")
+    )
     token = token.removeprefix("Bearer ").strip()
     if token != settings.api_key:
         raise HTTPException(status_code=401, detail="Unauthorized — pass ?token=<API_KEY>")
